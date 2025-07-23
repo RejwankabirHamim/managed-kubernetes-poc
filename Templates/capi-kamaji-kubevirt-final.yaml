@@ -54,7 +54,7 @@ spec:
     serviceAnnotations:
       kube-vip.io/loadbalancerIPs: 0.0.0.0
   deployment:
-  replicas: 3
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: "${KUBERNETES_VERSION}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
@@ -88,9 +88,9 @@ spec:
             spec:
               domain:
                 cpu:
-                  cores: "${WORKER_MACHINE_CPU}"
-                  sockets: "${SOCKETS}"
-                  threads: "${THREADS}"
+                  cores: ${WORKER_MACHINE_CPU}
+                  sockets: ${SOCKETS}
+                  threads: ${THREADS}
                 devices:
                   interfaces:
                     - bridge: {}
@@ -105,11 +105,11 @@ spec:
                       name: dv-volume
                 resources:
                   limits:
-                    cpu: "${WORKER_MACHINE_CPU}"
-                    memory: "${WORKER_MACHINE_MEMORY}"
+                    cpu: ${WORKER_MACHINE_CPU}
+                    memory: "${WORKER_MACHINE_MEMORY}Gi"
                   requests:
-                    cpu: "${WORKER_MACHINE_CPU}"
-                    memory: "${WORKER_MACHINE_MEMORY}"
+                    cpu: ${WORKER_MACHINE_CPU}
+                    memory: "${WORKER_MACHINE_MEMORY}Gi"
               evictionStrategy: External
               networks:
                 - name: default
