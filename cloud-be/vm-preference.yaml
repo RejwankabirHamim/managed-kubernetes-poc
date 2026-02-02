@@ -1,0 +1,19 @@
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterPreference
+metadata:
+  name: ubuntu-server-preference
+  namespace: default
+spec:
+  cpu:
+    preferredCPUTopology: preferSockets
+  devices:
+    preferredDiskBus: virtio
+    preferredInputBus: usb
+    preferredInputType: tablet
+    preferredInterfaceModel: virtio
+    preferredNetworkInterfaceMultiQueue: true
+  firmware:
+    preferredEfi:
+      secureBoot: true
+  machine:
+    preferredMachineType: q35
