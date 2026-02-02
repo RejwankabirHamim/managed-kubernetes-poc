@@ -37,23 +37,23 @@ metadata:
   name: capi-slowstart-kubevirt
   namespace: default
 spec:
-  dataStoreName: default
   addons:
     coreDNS:
       dnsServiceIPs:
         - 10.95.0.10
-    kubeProxy: {}
     konnectivity: {}
+    kubeProxy: {}
+  dataStoreName: default
+  deployment: null
   kubelet:
     cgroupfs: systemd
     preferredAddressTypes:
       - InternalIP
       - ExternalIP
   network:
-    serviceType: LoadBalancer
     serviceAnnotations:
       kube-vip.io/loadbalancerIPs: 0.0.0.0
-  deployment:
+    serviceType: LoadBalancer
   replicas: 2
   version: v1.30.1
 ---
@@ -78,7 +78,7 @@ spec:
                     - ReadWriteOnce
                   resources:
                     requests:
-                      storage: 30Gi
+                      storage: 12Gi
                   storageClassName: hvl
                 source:
                   registry:
@@ -92,17 +92,14 @@ spec:
                   sockets: 1
                   threads: 1
                 devices:
-                  interfaces:
-                    - bridge: {}
-                      model: virtio
-                      name: default
-                    - bridge: {}
-                      model: virtio
-                      name: defaultpod
                   disks:
                     - disk:
                         bus: virtio
                       name: containervolume
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
                 resources:
                   limits:
                     cpu: 4
@@ -115,8 +112,6 @@ spec:
                 - multus:
                     networkName: default/vmnet
                   name: default
-                - pod: {}
-                  name: defaultpod
               volumes:
                 - dataVolume:
                     name: capik-md-0-boot-volume
@@ -130,6 +125,11 @@ metadata:
 spec:
   template:
     spec:
+      users:
+        - name: myuser                  # e.g. your preferred username
+          sudo: ALL=(ALL) NOPASSWD:ALL  # optional: give sudo without password
+          sshAuthorizedKeys:
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCRPQ0sjY5ecxcpqYAGuk094qW0XdCe/t34U+hFEnV6yOnftjMYHO+1l/s5J6bgN4X4czRJ/wmfiKjjqiBzhGL0TgViPmxLZpezbsdQ41mA1yE6+pUsRc5pT8mZBhpmm5S0sCHGemt8n10nZUPvG0NDgufYq6C9PAuKoweh2TujG4D1E1t1E/yxOOZx8IhF19Hw6lHBknkBuiwBPGlhCKvVcYw6IgoS8AFkMYw86bRmKG4ux2DRtsXk1RAZQmvl25s+iUgTq5jSpXDvsgnQdQoykqcbzckV5vqxhb+3QPjAP8QVU+ZoNm+h/QmPk3sWhvJ+DJyFJ6l83BWK+pDdUBi2FEISflLLMSSzidICLuw1OdJTrnfIPVCpO9CJYjrwcIWpEmI+WddrAYtteBTVnpcT/pmo96f3ErYnQELYbE6eQfQOAH4mdVPCSdgIMJB/qMqOgGmLTOFHjVAHrkAc342tPkmL5ASnLlGNL9Z7ZRHB6ACeNJuz3BdGCjAS6RpfcOM= hamim@appscode.com
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs: {}
@@ -141,7 +141,7 @@ metadata:
   namespace: default
 spec:
   clusterName: capi-slowstart
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels: null
   template:

@@ -1,0 +1,310 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: capi-slowstart
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.243.0.0/16
+    services:
+      cidrBlocks:
+        - 10.95.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    kind: KamajiControlPlane
+    name: capi-slowstart-kubevirt
+    namespace: default
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: KubevirtCluster
+    name: capi-slowstart
+    namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtCluster
+metadata:
+  annotations:
+    cluster.x-k8s.io/managed-by: kamaji
+  name: capi-slowstart
+  namespace: default
+spec: {}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: KamajiControlPlane
+metadata:
+  name: capi-slowstart-kubevirt
+  namespace: default
+spec:
+  dataStoreName: default
+  addons:
+    coreDNS:
+      dnsServiceIPs:
+        - 10.95.0.10
+    kubeProxy: {}
+    konnectivity: {}
+  kubelet:
+    cgroupfs: systemd
+    preferredAddressTypes:
+      - InternalIP
+      - ExternalIP
+  network:
+    serviceType: LoadBalancer
+    serviceAnnotations:
+      kube-vip.io/loadbalancerIPs: 0.0.0.0
+  deployment:
+  replicas: 2
+  version: v1.30.1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: capi-slowstart-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        spec:
+          dataVolumeTemplates:
+            - metadata:
+                name: capik-md-0-boot-volume
+              spec:
+                pvc:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 30Gi
+                  storageClassName: hvl
+                source:
+                  registry:
+                    url: docker://quay.io/capk/ubuntu-2204-container-disk:v1.30.1
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: 4
+                  sockets: 1
+                  threads: 1
+                devices:
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                    - bridge: {}
+                      model: virtio
+                      name: defaultpod
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: containervolume
+                resources:
+                  limits:
+                    cpu: 4
+                    memory: 16Gi
+                  requests:
+                    cpu: 4
+                    memory: 16Gi
+              evictionStrategy: External
+              networks:
+                - multus:
+                    networkName: default/vmnet
+                  name: default
+                - pod: {}
+                  name: defaultpod
+              volumes:
+                - dataVolume:
+                    name: capik-md-0-boot-volume
+                  name: containervolume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: capi-slowstart-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: capi-slowstart-md-0
+  namespace: default
+spec:
+  clusterName: capi-slowstart
+  replicas: 1
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: capi-slowstart-md-0
+          namespace: default
+      clusterName: capi-slowstart
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: KubevirtMachineTemplate
+        name: capi-slowstart-md-0
+        namespace: default
+      version: v1.30.1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    capk.cluster.x-k8s.io/template-kind: extra-resource
+    cluster.x-k8s.io/cluster-name: capi-slowstart
+  name: cloud-controller-manager
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    capk.cluster.x-k8s.io/template-kind: extra-resource
+    cluster.x-k8s.io/cluster-name: capi-slowstart
+  name: kccm
+  namespace: default
+rules:
+  - apiGroups:
+      - kubevirt.io
+    resources:
+      - virtualmachines
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - kubevirt.io
+    resources:
+      - virtualmachineinstances
+    verbs:
+      - get
+      - watch
+      - list
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    capk.cluster.x-k8s.io/template-kind: extra-resource
+    cluster.x-k8s.io/cluster-name: capi-slowstart
+  name: kccm-sa
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kccm
+subjects:
+  - kind: ServiceAccount
+    name: cloud-controller-manager
+    namespace: default
+---
+apiVersion: v1
+data:
+  cloud-config: |
+    loadBalancer:
+      creationPollInterval: 5
+      creationPollTimeout: 60
+    namespace: default
+    instancesV2:
+      enabled: true
+      zoneAndRegionEnabled: false
+kind: ConfigMap
+metadata:
+  labels:
+    capk.cluster.x-k8s.io/template-kind: extra-resource
+    cluster.x-k8s.io/cluster-name: capi-slowstart
+  name: cloud-config
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    capk.cluster.x-k8s.io/template-kind: extra-resource
+    cluster.x-k8s.io/cluster-name: capi-slowstart
+    k8s-app: kubevirt-cloud-controller-manager
+  name: kubevirt-cloud-controller-manager
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      capk.cluster.x-k8s.io/template-kind: extra-resource
+      cluster.x-k8s.io/cluster-name: capi-slowstart
+      k8s-app: kubevirt-cloud-controller-manager
+  template:
+    metadata:
+      labels:
+        capk.cluster.x-k8s.io/template-kind: extra-resource
+        cluster.x-k8s.io/cluster-name: capi-slowstart
+        k8s-app: kubevirt-cloud-controller-manager
+    spec:
+      containers:
+        - args:
+            - --cloud-provider=kubevirt
+            - --cloud-config=/etc/cloud/cloud-config
+            - --kubeconfig=/etc/kubernetes/kubeconfig/value
+            - --authentication-skip-lookup=true
+            - --cluster-name=capi-slowstart
+          command:
+            - /bin/kubevirt-cloud-controller-manager
+          image: quay.io/kubevirt/kubevirt-cloud-controller-manager:v0.5.1
+          imagePullPolicy: Always
+          name: kubevirt-cloud-controller-manager
+          resources:
+            requests:
+              cpu: 100m
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /etc/kubernetes/kubeconfig
+              name: kubeconfig
+              readOnly: true
+            - mountPath: /etc/cloud
+              name: cloud-config
+              readOnly: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      serviceAccountName: cloud-controller-manager
+      tolerations:
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+      volumes:
+        - configMap:
+            name: cloud-config
+          name: cloud-config
+        - name: kubeconfig
+          secret:
+            secretName: capi-slowstart-kubeconfig

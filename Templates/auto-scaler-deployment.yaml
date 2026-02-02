@@ -1,0 +1,103 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  labels:
+    app: cluster-autoscaler
+spec:
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+    spec:
+      enableServiceLinks: false
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: "NoSchedule"
+      containers:
+      - image: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.34.2"
+        name: cluster-autoscaler
+        resources:
+          limits:
+            cpu: 512m
+            memory: 512Mi
+          requests:
+            cpu: 125m
+            memory: 128Mi
+        command:
+        - /cluster-autoscaler
+        args:
+        - --cloud-provider=clusterapi
+        - --enforce-node-group-min-size=true
+        - --ignore-daemonsets-utilization=true
+        - --ignore-mirror-pods-utilization=true
+        - --scale-down-unneeded-time=25s
+        - --scan-interval=15s
+        - --kubeconfig=/etc/kubernetes/kubeconfig/super-admin.svc
+        - --clusterapi-cloud-config-authoritative
+        - --node-group-auto-discovery=clusterapi:namespace=default,clusterName=capi-slowstart
+        volumeMounts:
+        - mountPath: /etc/kubernetes/kubeconfig
+          name: kubeconfig
+          readOnly: true
+      volumes:
+      - secret:
+          secretName: capi-slowstart-kubevirt-admin-kubeconfig
+        name: kubeconfig
+      serviceAccountName: cluster-autoscaler
+      terminationGracePeriodSeconds: 10
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-autoscaler
+subjects:
+- kind: ServiceAccount
+  name: cluster-autoscaler
+  namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-autoscaler
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cluster-autoscaler
+rules:
+  - apiGroups:
+    - cluster.x-k8s.io
+    resources:
+    - machinedeployments
+    - machinedeployments/scale
+    - machines
+    - machinesets
+    - machinepools
+    verbs:
+    - get
+    - list
+    - update
+    - watch
+    - patch
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    resources:
+    - kubevirtmachinetemplates
+    verbs:
+    - get
+    - list
+    - update
+    - watch

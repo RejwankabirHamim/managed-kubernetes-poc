@@ -1,0 +1,9 @@
+* Cilium in Kube-proxy Replacement mode:
+  https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/
+  https://cilium.io/use-cases/kube-proxy/
+* Machine Health Check with Cluster API:
+  https://cluster-api.sigs.k8s.io/user/quick-start.html#machine-health-check
+* Cluster autoscaler compatibility with kubernetes versions:
+  https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
+* Hubble relay in cilium:
+  https://docs.cilium.io/en/stable/internals/hubble/
