@@ -1,0 +1,183 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: capi-slowstart
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.243.0.0/16
+    services:
+      cidrBlocks:
+        - 10.95.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    kind: KamajiControlPlane
+    name: capi-slowstart-kubevirt
+    namespace: default
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: KubevirtCluster
+    name: capi-slowstart
+    namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtCluster
+metadata:
+  annotations:
+    cluster.x-k8s.io/managed-by: kamaji
+  name: capi-slowstart
+  namespace: default
+spec: {}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: KamajiControlPlane
+metadata:
+  name: capi-slowstart-kubevirt
+  namespace: default
+spec:
+  addons:
+    coreDNS:
+      dnsServiceIPs:
+        - 10.95.0.10
+    konnectivity: {}
+    kubeProxy: {}
+  dataStoreName: default
+  deployment: null
+  kubelet:
+    cgroupfs: systemd
+    preferredAddressTypes:
+      - InternalIP
+      - ExternalIP
+  network:
+    serviceAnnotations:
+      kube-vip.io/loadbalancerIPs: 0.0.0.0
+    serviceType: LoadBalancer
+  replicas: 2
+  version: v1.30.1
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: capi-slowstart-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        spec:
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: 4
+                  sockets: 1
+                  threads: 1
+                devices:
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: containervolume
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                    - bridge: {}
+                      model: virtio
+                      name: defaultpod
+                resources:
+                  limits:
+                    cpu: 4
+                    memory: 16Gi
+                  requests:
+                    cpu: 4
+                    memory: 16Gi
+              evictionStrategy: External
+              networks:
+                - multus:
+                    networkName: default/vmnet
+                  name: default
+                - pod: {}
+                  name: defaultpod
+              volumes:
+                - containerDisk:
+                    image: "quay.io/capk/ubuntu-2204-container-disk:v1.30.1"
+                  name: containervolume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: capi-slowstart-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      users:
+        - name: myuser                  # e.g. your preferred username
+          sudo: ALL=(ALL) NOPASSWD:ALL  # optional: give sudo without password
+          sshAuthorizedKeys:
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCRPQ0sjY5ecxcpqYAGuk094qW0XdCe/t34U+hFEnV6yOnftjMYHO+1l/s5J6bgN4X4czRJ/wmfiKjjqiBzhGL0TgViPmxLZpezbsdQ41mA1yE6+pUsRc5pT8mZBhpmm5S0sCHGemt8n10nZUPvG0NDgufYq6C9PAuKoweh2TujG4D1E1t1E/yxOOZx8IhF19Hw6lHBknkBuiwBPGlhCKvVcYw6IgoS8AFkMYw86bRmKG4ux2DRtsXk1RAZQmvl25s+iUgTq5jSpXDvsgnQdQoykqcbzckV5vqxhb+3QPjAP8QVU+ZoNm+h/QmPk3sWhvJ+DJyFJ6l83BWK+pDdUBi2FEISflLLMSSzidICLuw1OdJTrnfIPVCpO9CJYjrwcIWpEmI+WddrAYtteBTVnpcT/pmo96f3ErYnQELYbE6eQfQOAH4mdVPCSdgIMJB/qMqOgGmLTOFHjVAHrkAc342tPkmL5ASnLlGNL9Z7ZRHB6ACeNJuz3BdGCjAS6RpfcOM= hamim@appscode.com
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: capi-slowstart-md-0
+  namespace: default
+spec:
+  clusterName: capi-slowstart
+  replicas: 1
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: capi-slowstart-md-0
+          namespace: default
+      clusterName: capi-slowstart
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: KubevirtMachineTemplate
+        name: capi-slowstart-md-0
+        namespace: default
+      version: v1.30.1
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "3"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "0"
+    capacity.cluster-autoscaler.kubernetes.io/memory: "16G"
+    capacity.cluster-autoscaler.kubernetes.io/cpu: "4"
+  name: capi-slowstart-md-1
+  namespace: default
+spec:
+  clusterName: capi-slowstart
+  replicas: 0
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: capi-slowstart-md-0
+          namespace: default
+      clusterName: capi-slowstart
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: KubevirtMachineTemplate
+        name: capi-slowstart-md-0
+        namespace: default
+      version: v1.30.1

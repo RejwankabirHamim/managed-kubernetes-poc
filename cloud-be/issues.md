@@ -67,3 +67,18 @@ Error: Build config failed: failed to start: Get "https://10.95.0.1:443/api/v1/n
 this error occurs because the cilium agent pod cannot connect to the kubernetes api server. It tries to connect to the api server using the cluster IP, but the controlplane is not on the same network as the worker nodes as they are on different clusters.
 
 Solve: When installing cilium, we need to set the `k8sServiceHost` flag to "auto". So it will read external IP of controlplane node from cluster-info cm. This way, the cilium agent pod can connect to the api server using the external IP instead of the cluster IP.
+
+
+
+
+
+
+
+
+# 3. Kamaji pod restarted in management cluster (***solve later)
+
+Reason: OOMKilled
+
+memory limit is only 100Mi.
+
+

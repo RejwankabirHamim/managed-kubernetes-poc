@@ -7,3 +7,5 @@
   https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
 * Hubble relay in cilium:
   https://docs.cilium.io/en/stable/internals/hubble/
+* etcd must never run as BestEffort in production-like setups
+* ccm as part of hosted control plane: https://kamaji.clastix.io/cluster-api/vsphere-infra-provider/#cloud-controller-manager

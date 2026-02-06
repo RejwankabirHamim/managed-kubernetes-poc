@@ -1,0 +1,1081 @@
+LabelSelector is used to find matching pods.
+Pods that match this label selector are counted to determine the number of pods
+in their corresponding topology domain.
+properties:
+  matchExpressions:
+    description: matchExpressions is
+      a list of label selector requirements.
+      The requirements are ANDed.
+    items:
+      description: |-
+        A label selector requirement is a selector that contains values, a key, and an operator that
+        relates the key and values.
+      properties:
+        key:
+          description: key is the label
+            key that the selector applies
+            to.
+          type: string
+        operator:
+          description: |-
+            operator represents a key's relationship to a set of values.
+            Valid operators are In, NotIn, Exists and DoesNotExist.
+          type: string
+        values:
+          description: |-
+            values is an array of string values. If the operator is In or NotIn,
+            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+            the values array must be empty. This array is replaced during a strategic
+            merge patch.
+          items:
+            type: string
+          type: array
+          x-kubernetes-list-type: atomic
+      required:
+        - key
+        - operator
+      type: object
+    type: array
+    x-kubernetes-list-type: atomic
+  matchLabels:
+    additionalProperties:
+      type: string
+    description: |-
+      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+      map is equivalent to an element of matchExpressions, whose key field is "key", the
+      operator is "In", and the values array contains only "value". The requirements are ANDed.
+    type: object
+type: object
+x-kubernetes-map-type: atomic
+matchLabelKeys:
+  description: |-
+    MatchLabelKeys is a set of pod label keys to select the pods over which
+    spreading will be calculated. The keys are used to lookup values from the
+    incoming pod labels, those key-value labels are ANDed with labelSelector
+    to select the group of existing pods over which spreading will be calculated
+    for the incoming pod. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector.
+    MatchLabelKeys cannot be set when LabelSelector isn't set.
+    Keys that don't exist in the incoming pod labels will
+    be ignored. A null or empty list means only match against labelSelector.
+    
+    This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).
+  items:
+    type: string
+  type: array
+  x-kubernetes-list-type: atomic
+maxSkew:
+  description: |-
+    MaxSkew describes the degree to which pods may be unevenly distributed.
+    When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference
+    between the number of matching pods in the target topology and the global minimum.
+    The global minimum is the minimum number of matching pods in an eligible domain
+    or zero if the number of eligible domains is less than MinDomains.
+    For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same
+    labelSelector spread as 2/2/1:
+    In this case, the global minimum is 1.
+    | zone1 | zone2 | zone3 |
+    |  P P  |  P P  |   P   |
+    - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2;
+    scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2)
+    violate MaxSkew(1).
+    - if MaxSkew is 2, incoming pod can be scheduled onto any zone.
+    When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence
+    to topologies that satisfy it.
+    It's a required field. Default value is 1 and 0 is not allowed.
+  format: int32
+  type: integer
+minDomains:
+  description: |-
+    MinDomains indicates a minimum number of eligible domains.
+    When the number of eligible domains with matching topology keys is less than minDomains,
+    Pod Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed.
+    And when the number of eligible domains with matching topology keys equals or greater than minDomains,
+    this value has no effect on scheduling.
+    As a result, when the number of eligible domains is less than minDomains,
+    scheduler won't schedule more than maxSkew Pods to those domains.
+    If value is nil, the constraint behaves as if MinDomains is equal to 1.
+    Valid values are integers greater than 0.
+    When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
+    
+    For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
+    labelSelector spread as 2/2/2:
+    | zone1 | zone2 | zone3 |
+    |  P P  |  P P  |  P P  |
+    The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0.
+    In this situation, new pod with the same labelSelector cannot be scheduled,
+    because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
+    it will violate MaxSkew.
+  format: int32
+  type: integer
+nodeAffinityPolicy:
+  description: |-
+    NodeAffinityPolicy indicates how we will treat Pod's nodeAffinity/nodeSelector
+    when calculating pod topology spread skew. Options are:
+    - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
+    - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
+    
+    If this value is nil, the behavior is equivalent to the Honor policy.
+    This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
+  type: string
+nodeTaintsPolicy:
+  description: |-
+    NodeTaintsPolicy indicates how we will treat node taints when calculating
+    pod topology spread skew. Options are:
+    - Honor: nodes without taints, along with tainted nodes for which the incoming pod
+    has a toleration, are included.
+    - Ignore: node taints are ignored. All nodes are included.
+    
+    If this value is nil, the behavior is equivalent to the Ignore policy.
+    This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
+  type: string
+topologyKey:
+  description: |-
+    TopologyKey is the key of node labels. Nodes that have a label with this key
+    and identical values are considered to be in the same topology.
+    We consider each <key, value> as a "bucket", and try to put balanced number
+    of pods into each bucket.
+    We define a domain as a particular instance of a topology.
+    Also, we define an eligible domain as a domain whose nodes meet the requirements of
+    nodeAffinityPolicy and nodeTaintsPolicy.
+    e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology.
+    And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology.
+    It's a required field.
+  type: string
+whenUnsatisfiable:
+  description: |-
+    WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy
+    the spread constraint.
+    - DoNotSchedule (default) tells the scheduler not to schedule it.
+    - ScheduleAnyway tells the scheduler to schedule the pod in any location,
+      but giving higher precedence to topologies that would help reduce the
+      skew.
+    A constraint is considered "Unsatisfiable" for an incoming pod
+    if and only if every possible node assignment for that pod would violate
+    "MaxSkew" on some topology.
+    For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same
+    labelSelector spread as 3/1/1:
+    | zone1 | zone2 | zone3 |
+    | P P P |   P   |   P   |
+    If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled
+    to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies
+    MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler
+    won't make it *more* imbalanced.
+    It's a required field.
+  type: string
+required:
+  - maxSkew
+  - topologyKey
+  - whenUnsatisfiable
+type: object
+type: array
+x-kubernetes-list-map-keys:
+  - topologyKey
+  - whenUnsatisfiable
+x-kubernetes-list-type: map
+volumes:
+  description: List of volumes that can be mounted
+    by disks belonging to the vmi.
+  items:
+    description: Volume represents a named volume
+      in a vmi.
+    properties:
+      cloudInitConfigDrive:
+        description: |-
+          CloudInitConfigDrive represents a cloud-init Config Drive user-data source.
+          The Config Drive data will be added as a disk to the vmi. A proper cloud-init installation is required inside the guest.
+          More info: https://cloudinit.readthedocs.io/en/latest/topics/datasources/configdrive.html
+        properties:
+          networkData:
+            description: NetworkData contains
+              config drive inline cloud-init
+              networkdata.
+            type: string
+          networkDataBase64:
+            description: NetworkDataBase64 contains
+              config drive cloud-init networkdata
+              as a base64 encoded string.
+            type: string
+          networkDataSecretRef:
+            description: NetworkDataSecretRef
+              references a k8s secret that contains
+              config drive networkdata.
+            properties:
+              name:
+                default: ""
+                description: |-
+                  Name of the referent.
+                  This field is effectively required, but due to backwards compatibility is
+                  allowed to be empty. Instances of this type with an empty value here are
+                  almost certainly wrong.
+                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                type: string
+            type: object
+            x-kubernetes-map-type: atomic
+          secretRef:
+            description: UserDataSecretRef references
+              a k8s secret that contains config
+              drive userdata.
+            properties:
+              name:
+                default: ""
+                description: |-
+                  Name of the referent.
+                  This field is effectively required, but due to backwards compatibility is
+                  allowed to be empty. Instances of this type with an empty value here are
+                  almost certainly wrong.
+                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                type: string
+            type: object
+            x-kubernetes-map-type: atomic
+          userData:
+            description: UserData contains config
+              drive inline cloud-init userdata.
+            type: string
+          userDataBase64:
+            description: UserDataBase64 contains
+              config drive cloud-init userdata
+              as a base64 encoded string.
+            type: string
+        type: object
+      cloudInitNoCloud:
+        description: |-
+          CloudInitNoCloud represents a cloud-init NoCloud user-data source.
+          The NoCloud data will be added as a disk to the vmi. A proper cloud-init installation is required inside the guest.
+          More info: http://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html
+        properties:
+          networkData:
+            description: NetworkData contains
+              NoCloud inline cloud-init networkdata.
+            type: string
+          networkDataBase64:
+            description: NetworkDataBase64 contains
+              NoCloud cloud-init networkdata
+              as a base64 encoded string.
+            type: string
+          networkDataSecretRef:
+            description: NetworkDataSecretRef
+              references a k8s secret that contains
+              NoCloud networkdata.
+            properties:
+              name:
+                default: ""
+                description: |-
+                  Name of the referent.
+                  This field is effectively required, but due to backwards compatibility is
+                  allowed to be empty. Instances of this type with an empty value here are
+                  almost certainly wrong.
+                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                type: string
+            type: object
+            x-kubernetes-map-type: atomic
+          secretRef:
+            description: UserDataSecretRef references
+              a k8s secret that contains NoCloud
+              userdata.
+            properties:
+              name:
+                default: ""
+                description: |-
+                  Name of the referent.
+                  This field is effectively required, but due to backwards compatibility is
+                  allowed to be empty. Instances of this type with an empty value here are
+                  almost certainly wrong.
+                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                type: string
+            type: object
+            x-kubernetes-map-type: atomic
+          userData:
+            description: UserData contains NoCloud
+              inline cloud-init userdata.
+            type: string
+          userDataBase64:
+            description: UserDataBase64 contains
+              NoCloud cloud-init userdata as
+              a base64 encoded string.
+            type: string
+        type: object
+      configMap:
+        description: |-
+          ConfigMapSource represents a reference to a ConfigMap in the same namespace.
+          More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
+        properties:
+          name:
+            default: ""
+            description: |-
+              Name of the referent.
+              This field is effectively required, but due to backwards compatibility is
+              allowed to be empty. Instances of this type with an empty value here are
+              almost certainly wrong.
+              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+            type: string
+          optional:
+            description: Specify whether the
+              ConfigMap or it's keys must be
+              defined
+            type: boolean
+          volumeLabel:
+            description: |-
+              The volume label of the resulting disk inside the VMI.
+              Different bootstrapping mechanisms require different values.
+              Typical values are "cidata" (cloud-init), "config-2" (cloud-init) or "OEMDRV" (kickstart).
+            type: string
+        type: object
+        x-kubernetes-map-type: atomic
+      containerDisk:
+        description: |-
+          ContainerDisk references a docker image, embedding a qcow or raw disk.
+          More info: https://kubevirt.gitbooks.io/user-guide/registry-disk.html
+        properties:
+          image:
+            description: Image is the name of
+              the image with the embedded disk.
+            type: string
+          imagePullPolicy:
+            description: |-
+              Image pull policy.
+              One of Always, Never, IfNotPresent.
+              Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+              Cannot be updated.
+              More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+            type: string
+          imagePullSecret:
+            description: ImagePullSecret is
+              the name of the Docker registry
+              secret required to pull the image.
+              The secret must already exist.
+            type: string
+          path:
+            description: Path defines the path
+              to disk file in the container
+            type: string
+        required:
+          - image
+        type: object
+      dataVolume:
+        description: |-
+          DataVolume represents the dynamic creation a PVC for this volume as well as
+          the process of populating that PVC with a disk image.
+        properties:
+          hotpluggable:
+            description: Hotpluggable indicates
+              whether the volume can be hotplugged
+              and hotunplugged.
+            type: boolean
+          name:
+            description: Name of both the DataVolume
+              and the PVC in the same namespace.
+            type: string
+        required:
+          - name
+        type: object
+      downwardAPI:
+        description: DownwardAPI represents
+          downward API about the pod that should
+          populate this volume
+        properties:
+          fields:
+            description: Fields is a list of
+              downward API volume file
+            items:
+              description: DownwardAPIVolumeFile
+                represents information to create
+                the file containing the pod
+                field
+              properties:
+                fieldRef:
+                  description: 'Required: Selects
+                                                          a field of the pod: only
+                                                          annotations, labels, name,
+                                                          namespace and uid are supported.'
+                  properties:
+                    apiVersion:
+                      description: Version of
+                        the schema the FieldPath
+                        is written in terms
+                        of, defaults to "v1".
+                      type: string
+                    fieldPath:
+                      description: Path of the
+                        field to select in the
+                        specified API version.
+                      type: string
+                  required:
+                    - fieldPath
+                  type: object
+                  x-kubernetes-map-type: atomic
+                mode:
+                  description: |-
+                    Optional: mode bits used to set permissions on this file, must be an octal value
+                    between 0000 and 0777 or a decimal value between 0 and 511.
+                    YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
+                    If not specified, the volume defaultMode will be used.
+                    This might be in conflict with other options that affect the file
+                    mode, like fsGroup, and the result can be other mode bits set.
+                  format: int32
+                  type: integer
+                path:
+                  description: 'Required: Path
+                                                          is  the relative path name
+                                                          of the file to be created.
+                                                          Must not be absolute or
+                                                          contain the ''..'' path.
+                                                          Must be utf-8 encoded. The
+                                                          first item of the relative
+                                                          path must not start with
+                                                          ''..'''
+                  type: string
+                resourceFieldRef:
+                  description: |-
+                    Selects a resource of the container: only resources limits and requests
+                    (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+                  properties:
+                    containerName:
+                      description: 'Container
+                                                              name: required for volumes,
+                                                              optional for env vars'
+                      type: string
+                    divisor:
+                      anyOf:
+                        - type: integer
+                        - type: string
+                      description: Specifies
+                        the output format of
+                        the exposed resources,
+                        defaults to "1"
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    resource:
+                      description: 'Required:
+                                                              resource to select'
+                      type: string
+                  required:
+                    - resource
+                  type: object
+                  x-kubernetes-map-type: atomic
+              required:
+                - path
+              type: object
+            type: array
+          volumeLabel:
+            description: |-
+              The volume label of the resulting disk inside the VMI.
+              Different bootstrapping mechanisms require different values.
+              Typical values are "cidata" (cloud-init), "config-2" (cloud-init) or "OEMDRV" (kickstart).
+            type: string
+        type: object
+      downwardMetrics:
+        description: |-
+          DownwardMetrics adds a very small disk to VMIs which contains a limited view of host and guest
+          metrics. The disk content is compatible with vhostmd (https://github.com/vhostmd/vhostmd) and vm-dump-metrics.
+        type: object
+      emptyDisk:
+        description: |-
+          EmptyDisk represents a temporary disk which shares the vmis lifecycle.
+          More info: https://kubevirt.gitbooks.io/user-guide/disks-and-volumes.html
+        properties:
+          capacity:
+            anyOf:
+              - type: integer
+              - type: string
+            description: Capacity of the sparse
+              disk.
+            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+            x-kubernetes-int-or-string: true
+        required:
+          - capacity
+        type: object
+      ephemeral:
+        description: Ephemeral is a special
+          volume source that "wraps" specified
+          source and provides copy-on-write
+          image on top of it.
+        properties:
+          persistentVolumeClaim:
+            description: |-
+              PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace.
+              Directly attached to the vmi via qemu.
+              More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+            properties:
+              claimName:
+                description: |-
+                  claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+                  More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+                type: string
+              readOnly:
+                description: |-
+                  readOnly Will force the ReadOnly setting in VolumeMounts.
+                  Default false.
+                type: boolean
+            required:
+              - claimName
+            type: object
+        type: object
+      hostDisk:
+        description: HostDisk represents a disk
+          created on the cluster level
+        properties:
+          capacity:
+            anyOf:
+              - type: integer
+              - type: string
+            description: Capacity of the sparse
+              disk
+            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+            x-kubernetes-int-or-string: true
+          path:
+            description: The path to HostDisk
+              image located on the cluster
+            type: string
+          shared:
+            description: Shared indicate whether
+              the path is shared between nodes
+            type: boolean
+          type:
+            description: |-
+              Contains information if disk.img exists or should be created
+              allowed options are 'Disk' and 'DiskOrCreate'
+            type: string
+        required:
+          - path
+          - type
+        type: object
+      memoryDump:
+        description: MemoryDump is attached
+          to the virt launcher and is populated
+          with a memory dump of the vmi
+        properties:
+          claimName:
+            description: |-
+              claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+              More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+            type: string
+          hotpluggable:
+            description: Hotpluggable indicates
+              whether the volume can be hotplugged
+              and hotunplugged.
+            type: boolean
+          readOnly:
+            description: |-
+              readOnly Will force the ReadOnly setting in VolumeMounts.
+              Default false.
+            type: boolean
+        required:
+          - claimName
+        type: object
+      name:
+        description: |-
+          Volume's name.
+          Must be a DNS_LABEL and unique within the vmi.
+          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+        type: string
+      persistentVolumeClaim:
+        description: |-
+          PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace.
+          Directly attached to the vmi via qemu.
+          More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+        properties:
+          claimName:
+            description: |-
+              claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+              More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+            type: string
+          hotpluggable:
+            description: Hotpluggable indicates
+              whether the volume can be hotplugged
+              and hotunplugged.
+            type: boolean
+          readOnly:
+            description: |-
+              readOnly Will force the ReadOnly setting in VolumeMounts.
+              Default false.
+            type: boolean
+        required:
+          - claimName
+        type: object
+      secret:
+        description: |-
+          SecretVolumeSource represents a reference to a secret data in the same namespace.
+          More info: https://kubernetes.io/docs/concepts/configuration/secret/
+        properties:
+          optional:
+            description: Specify whether the
+              Secret or it's keys must be defined
+            type: boolean
+          secretName:
+            description: |-
+              Name of the secret in the pod's namespace to use.
+              More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
+            type: string
+          volumeLabel:
+            description: |-
+              The volume label of the resulting disk inside the VMI.
+              Different bootstrapping mechanisms require different values.
+              Typical values are "cidata" (cloud-init), "config-2" (cloud-init) or "OEMDRV" (kickstart).
+            type: string
+        type: object
+      serviceAccount:
+        description: |-
+          ServiceAccountVolumeSource represents a reference to a service account.
+          There can only be one volume of this type!
+          More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+        properties:
+          serviceAccountName:
+            description: |-
+              Name of the service account in the pod's namespace to use.
+              More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+            type: string
+        type: object
+      sysprep:
+        description: Represents a Sysprep volume
+          source.
+        properties:
+          configMap:
+            description: ConfigMap references
+              a ConfigMap that contains Sysprep
+              answer file named autounattend.xml
+              that should be attached as disk
+              of CDROM type.
+            properties:
+              name:
+                default: ""
+                description: |-
+                  Name of the referent.
+                  This field is effectively required, but due to backwards compatibility is
+                  allowed to be empty. Instances of this type with an empty value here are
+                  almost certainly wrong.
+                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                type: string
+            type: object
+            x-kubernetes-map-type: atomic
+          secret:
+            description: Secret references a
+              k8s Secret that contains Sysprep
+              answer file named autounattend.xml
+              that should be attached as disk
+              of CDROM type.
+            properties:
+              name:
+                default: ""
+                description: |-
+                  Name of the referent.
+                  This field is effectively required, but due to backwards compatibility is
+                  allowed to be empty. Instances of this type with an empty value here are
+                  almost certainly wrong.
+                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                type: string
+            type: object
+            x-kubernetes-map-type: atomic
+        type: object
+    required:
+      - name
+    type: object
+  maxItems: 256
+  type: array
+required:
+  - domain
+type: object
+type: object
+updateVolumesStrategy:
+  description: UpdateVolumesStrategy is the strategy
+    to apply on volumes updates
+  type: string
+required:
+  - template
+type: object
+type: object
+type: object
+required:
+  - spec
+type: object
+required:
+  - template
+type: object
+type: object
+served: true
+storage: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-manager
+  namespace: capk-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-leader-election-role
+  namespace: capk-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps/status
+    verbs:
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-manager-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - serviceaccounts
+    verbs:
+      - delete
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - delete
+      - list
+  - apiGroups:
+      - cdi.kubevirt.io
+    resources:
+      - datavolumes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - cluster.x-k8s.io
+    resources:
+      - clusters
+      - machines
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - kubevirtclusters
+      - kubevirtmachines
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - kubevirtclusters/status
+      - kubevirtmachines/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - kubevirt.io
+    resources:
+      - virtualmachineinstances
+    verbs:
+      - delete
+      - get
+  - apiGroups:
+      - kubevirt.io
+    resources:
+      - virtualmachines
+    verbs:
+      - create
+      - delete
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+      - roles
+    verbs:
+      - delete
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-leader-election-rolebinding
+  namespace: capk-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: capk-leader-election-role
+subjects:
+  - kind: ServiceAccount
+    name: capk-manager
+    namespace: capk-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: capk-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: capk-manager
+    namespace: capk-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-webhook-service
+  namespace: capk-system
+spec:
+  ports:
+    - port: 443
+      targetPort: 9443
+  selector:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+    control-plane: controller-manager
+  name: capk-controller-manager
+  namespace: capk-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/provider: kubevirt
+      cluster.x-k8s.io/v1alpha1: v1alpha1
+      cluster.x-k8s.io/v1alpha2: v1alpha1
+      cluster.x-k8s.io/v1alpha3: v1alpha1
+      cluster.x-k8s.io/v1alpha4: v1alpha1
+      cluster.x-k8s.io/v1beta1: v1alpha1
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/provider: kubevirt
+        cluster.x-k8s.io/v1alpha1: v1alpha1
+        cluster.x-k8s.io/v1alpha2: v1alpha1
+        cluster.x-k8s.io/v1alpha3: v1alpha1
+        cluster.x-k8s.io/v1alpha4: v1alpha1
+        cluster.x-k8s.io/v1beta1: v1alpha1
+        control-plane: controller-manager
+    spec:
+      containers:
+        - args:
+            - --leader-elect
+            - --feature-gates=MachinePool=false
+          command:
+            - /manager
+          env:
+            - name: NO_PROXY
+              value: 127.0.0.1,localhost
+          image: quay.io/capk/capk-manager:v0.1.10
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+          name: manager
+          ports:
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
+            - containerPort: 9440
+              name: healthz
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: healthz
+          volumeMounts:
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
+      serviceAccountName: capk-manager
+      terminationGracePeriodSeconds: 10
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: capk-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-serving-cert
+  namespace: capk-system
+spec:
+  dnsNames:
+    - capk-webhook-service.capk-system.svc
+    - capk-webhook-service.capk-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: capk-selfsigned-issuer
+  secretName: capk-webhook-service-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-selfsigned-issuer
+  namespace: capk-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: capk-system/capk-serving-cert
+  creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: kubevirt
+    cluster.x-k8s.io/v1alpha1: v1alpha1
+    cluster.x-k8s.io/v1alpha2: v1alpha1
+    cluster.x-k8s.io/v1alpha3: v1alpha1
+    cluster.x-k8s.io/v1alpha4: v1alpha1
+    cluster.x-k8s.io/v1beta1: v1alpha1
+  name: capk-validating-webhook-configuration
+webhooks:
+  - admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        name: capk-webhook-service
+        namespace: capk-system
+        path: /validate-infrastructure-cluster-x-k8s-io-v1alpha1-kubevirtmachinetemplate
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    name: validation.kubevirtmachinetemplate.infrastructure.cluster.x-k8s.io
+    rules:
+      - apiGroups:
+          - infrastructure.cluster.x-k8s.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - kubevirtmachinetemplates
+    sideEffects: None
