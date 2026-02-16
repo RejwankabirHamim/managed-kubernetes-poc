@@ -78,7 +78,7 @@ spec:
                     - ReadWriteOnce
                   resources:
                     requests:
-                      storage: 12Gi
+                      storage: 20Gi
                   storageClassName: hvl
                 source:
                   registry:
@@ -99,6 +99,9 @@ spec:
                   interfaces:
                     - bridge: {}
                       model: virtio
+                      name: secondary
+                    - bridge: {}
+                      model: virtio
                       name: default
                 resources:
                   limits:
@@ -111,7 +114,9 @@ spec:
               networks:
                 - multus:
                     networkName: default/vmnet
-                  name: default
+                  name: secondary
+                - name: default
+                  pod: {}
               volumes:
                 - dataVolume:
                     name: capik-md-0-boot-volume
@@ -129,7 +134,7 @@ spec:
         - name: myuser                  # e.g. your preferred username
           sudo: ALL=(ALL) NOPASSWD:ALL  # optional: give sudo without password
           sshAuthorizedKeys:
-            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCRPQ0sjY5ecxcpqYAGuk094qW0XdCe/t34U+hFEnV6yOnftjMYHO+1l/s5J6bgN4X4czRJ/wmfiKjjqiBzhGL0TgViPmxLZpezbsdQ41mA1yE6+pUsRc5pT8mZBhpmm5S0sCHGemt8n10nZUPvG0NDgufYq6C9PAuKoweh2TujG4D1E1t1E/yxOOZx8IhF19Hw6lHBknkBuiwBPGlhCKvVcYw6IgoS8AFkMYw86bRmKG4ux2DRtsXk1RAZQmvl25s+iUgTq5jSpXDvsgnQdQoykqcbzckV5vqxhb+3QPjAP8QVU+ZoNm+h/QmPk3sWhvJ+DJyFJ6l83BWK+pDdUBi2FEISflLLMSSzidICLuw1OdJTrnfIPVCpO9CJYjrwcIWpEmI+WddrAYtteBTVnpcT/pmo96f3ErYnQELYbE6eQfQOAH4mdVPCSdgIMJB/qMqOgGmLTOFHjVAHrkAc342tPkmL5ASnLlGNL9Z7ZRHB6ACeNJuz3BdGCjAS6RpfcOM= hamim@appscode.com
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCzc0+9R4uEmf81h7yrkyM750HF1pMyo5LSx5oXL2VA1/4fP4+FZ7zHQi+0azkyeybEvBqR8ga4NIeRO2gYVnz9TCorGBzpHIcRZ4A0+tGBD2/nD6bRJJ98koNRSJX5/R8fBfxUSdK4pSTkP5d7wk8ZFeo+S47tHY9hSHGskTdSs6IGsQy535hxazJViKVP63oMlOB4tZ9s6TKnlAsty+Ev+aQie6Rg/wW4ybx9Ju62Alzgrt9b8HQzFDz0vBUOzhiqgnKS9KLrmYWJjro49nlEILkO6XCSelagHTcsB+PEvCbcJqCITJ4o1x976sWaPVSiJ5kX2WD5cdraAUsfTYVq34Dn3cZFMQSmLCxdXPTBGAsbOPL6xXFX8IcytJ4zTCQE+F5qe5dy3CfVyQKOgAe49znguKiB3WFeg1wU0P5Gpm+mW/2+4jAz5V+ia/PZPe4jyeJh2OzN2LNE+cWq8S2CZDVoliX7FExTky8/AlqrOvXDD6gq4sIwhKBLW3At6TTE3C0Yu9sySOfvtRMTgMYa1Dmi371rLacPtCFt1Or/RHpJSt9ablPuAMpjn+hix8SnSfHSD4wkNN3p9P2K+gDpgZFwNQNZbu6pn9b1dUPgqmudXNY8ZQcSI73IpznnVMfNAHynNLYrahamSs0L0nCIwgZ7yVmYJyLCXRWqMwKBpQ== suman@appscode.com
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs: {}
@@ -141,7 +146,7 @@ metadata:
   namespace: default
 spec:
   clusterName: capi-slowstart
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels: null
   template:

@@ -19,3 +19,6 @@ error: no matching resources found
 min< max
 max<=100
 min & count na thakle
+
+
+* In delete k8s api, when host cluster unreachable, infra namespace deletion make workflow failed

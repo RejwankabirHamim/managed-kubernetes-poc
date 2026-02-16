@@ -1,0 +1,33 @@
+{
+  "data": {
+    "K8sUpdateWorkerNodePool": {
+      "worker_node_pool": {
+        "spec": {
+          "name": "pool-e2my3cjke",
+          "tags": [
+            "k8s",
+            "k8s:d681a5e5-4256-4447-b06b-34de0971e689",
+            "k8s:worker"
+          ],
+          "min_nodes": 0,
+          "max_nodes": 0,
+          "auto_scale": false,
+          "num_nodes": 1,
+          "labels": {},
+          "taints": [
+            {
+              "key": "new",
+              "value": "ss",
+              "effect": "PreferNoSchedule",
+              "__typename": "Taint"
+            }
+          ],
+          "__typename": "WorkerNodePoolSpec"
+        },
+        "uuid": "fc37eb9a-b5d1-4570-93b4-505bd0ffc5d8",
+        "__typename": "K8sWorkerNodePool"
+      },
+      "__typename": "K8sUpdateWorkerNodePoolRes"
+    }
+  }
+}
