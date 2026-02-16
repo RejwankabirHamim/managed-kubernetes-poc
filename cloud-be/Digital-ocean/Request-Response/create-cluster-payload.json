@@ -1,0 +1,26 @@
+{
+  "operationName": "k8sCreateCluster",
+  "variables": {
+    "payload": {
+      "cluster_spec": {
+        "name": "k8s",
+        "region_slug": "fra1",
+        "version_slug": "1.34.1-do.5",
+        "is_ha": true,
+        "plugins": null,
+        "overlay_subnet": "10.108.0.0/16",
+        "service_subnet": "10.109.0.0/19"
+      },
+      "worker_node_pool_specs": [
+        {
+          "droplet_size_slug": "s-1vcpu-2gb",
+          "name": "pool-lhbutztic",
+          "num_nodes": 3,
+          "auto_scale": false
+        }
+      ],
+      "fleet_uuid": "a929cb0f-8df1-4deb-b087-473dea04a132"
+    }
+  },
+  "query": "mutation k8sCreateCluster($payload: K8sCreateClusterReq) {\n  K8sCreateCluster(K8sCreateClusterReq: $payload) {\n    cluster {\n      uuid\n      spec {\n        name\n        is_ha\n        plugins {\n          plugin {\n            slug\n            __typename\n          }\n          config\n          __typename\n        }\n        __typename\n      }\n      worker_node_pools {\n        uuid\n        spec {\n          auto_scale\n          num_nodes\n          min_nodes\n          max_nodes\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+}

@@ -1,0 +1,11 @@
+{
+  "operationName": "getVpc",
+  "variables": {
+    "payload": {
+      "vpc": {
+        "id": "a615af33-87fd-4405-af42-bca407a2dcb4"
+      }
+    }
+  },
+  "query": "query getVpc($payload: VPCRequest!) {\n  GetVPCAggregator(VPCRequest: $payload) {\n    vpc {\n      id\n      name\n      description\n      ipRange: ip_range\n      __typename\n    }\n    __typename\n  }\n}\n"
+}

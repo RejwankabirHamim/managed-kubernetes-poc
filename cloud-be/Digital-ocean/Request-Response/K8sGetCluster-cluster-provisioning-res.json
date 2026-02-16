@@ -1,0 +1,168 @@
+{
+  "data": {
+    "K8sGetCluster": {
+      "cluster": {
+        "uuid": "1363f027-aaf3-4572-85f7-1af38d955156",
+        "project": {
+          "uuid": "a929cb0f-8df1-4deb-b087-473dea04a132",
+          "__typename": "Project"
+        },
+        "status": {
+          "state": "Provisioning",
+          "supported_features": [
+            "amd-gpu-support",
+            "amd-mi350-multi-node",
+            "cc-worker-observability",
+            "cilium-kubeproxy-replacement",
+            "cluster-autoscaler",
+            "control-plane-firewall",
+            "deny-access-to-nodeports",
+            "do-operator-plugin",
+            "docker-vpc-bug-fixed",
+            "docr-integration",
+            "extended-agent-status",
+            "gpu-dependencies",
+            "gpu-support",
+            "ha-control-plane",
+            "injected-kubelet-reservations",
+            "master-uses-provisioned-marker",
+            "no-worker-etcd-cert",
+            "nvidia-dcgm-enabled",
+            "otel-observability",
+            "read-only-clusterrole",
+            "scale-to-zero",
+            "token-authentication",
+            "vpc-native",
+            "vpc-native-by-default"
+          ],
+          "timestamps": {
+            "created_at": {
+              "seconds": "1772601262",
+              "__typename": "Timestamp"
+            },
+            "updated_at": {
+              "seconds": "1772601262",
+              "__typename": "Timestamp"
+            },
+            "__typename": "StatusTimestamps"
+          },
+          "__typename": "K8sClusterStatus"
+        },
+        "spec": {
+          "name": "k8s",
+          "region_slug": "fra1",
+          "management_network": null,
+          "overlay_subnet": "10.108.0.0/16",
+          "service_subnet": "10.109.0.0/19",
+          "tags": [
+            "k8s",
+            "k8s:1363f027-aaf3-4572-85f7-1af38d955156"
+          ],
+          "vpc_uuid": "a615af33-87fd-4405-af42-bca407a2dcb4",
+          "auto_upgrade": false,
+          "surge_upgrade_enabled": true,
+          "version_slug": "1.34.1-do.5",
+          "is_ha": true,
+          "is_ccp": true,
+          "is_vpc_native": true,
+          "apps": null,
+          "maintenance_policy": {
+            "start_time": "21:00",
+            "day": "Any",
+            "__typename": "MaintenancePolicy"
+          },
+          "registry_enabled": false,
+          "registries": [],
+          "plugins": [],
+          "__typename": "K8sClusterSpec"
+        },
+        "worker_node_pools": [
+          {
+            "uuid": "713d580d-eef0-464f-b317-fafdf6d4d083",
+            "state": "Provisioning",
+            "spec": {
+              "name": "pool-lhbutztic",
+              "droplet_size_slug": "s-1vcpu-2gb",
+              "tags": [
+                "k8s",
+                "k8s:1363f027-aaf3-4572-85f7-1af38d955156",
+                "k8s:worker"
+              ],
+              "auto_scale": false,
+              "auto_replace_outdated_nodes": null,
+              "num_nodes": 3,
+              "min_nodes": 0,
+              "max_nodes": 0,
+              "taints": [],
+              "labels": {},
+              "__typename": "WorkerNodePoolSpec"
+            },
+            "statuses": [
+              {
+                "uuid": "b022932a-1db5-4aa9-8472-52bb92a4fdc7",
+                "droplet_id": "",
+                "hostname": "",
+                "state": "Provisioning",
+                "version_slug": "1.34.1-do.5",
+                "timestamps": {
+                  "created_at": {
+                    "seconds": "1772601262",
+                    "__typename": "Timestamp"
+                  },
+                  "updated_at": {
+                    "seconds": "1772601262",
+                    "__typename": "Timestamp"
+                  },
+                  "__typename": "StatusTimestamps"
+                },
+                "__typename": "K8sWorkerNodeStatus"
+              },
+              {
+                "uuid": "eedf9f87-9036-4750-8669-73aa61cc3757",
+                "droplet_id": "",
+                "hostname": "",
+                "state": "Provisioning",
+                "version_slug": "1.34.1-do.5",
+                "timestamps": {
+                  "created_at": {
+                    "seconds": "1772601262",
+                    "__typename": "Timestamp"
+                  },
+                  "updated_at": {
+                    "seconds": "1772601262",
+                    "__typename": "Timestamp"
+                  },
+                  "__typename": "StatusTimestamps"
+                },
+                "__typename": "K8sWorkerNodeStatus"
+              },
+              {
+                "uuid": "b8ed4f48-59b8-4fe1-8da3-d70cebdb0545",
+                "droplet_id": "",
+                "hostname": "",
+                "state": "Provisioning",
+                "version_slug": "1.34.1-do.5",
+                "timestamps": {
+                  "created_at": {
+                    "seconds": "1772601262",
+                    "__typename": "Timestamp"
+                  },
+                  "updated_at": {
+                    "seconds": "1772601262",
+                    "__typename": "Timestamp"
+                  },
+                  "__typename": "StatusTimestamps"
+                },
+                "__typename": "K8sWorkerNodeStatus"
+              }
+            ],
+            "__typename": "K8sWorkerNodePool"
+          }
+        ],
+        "__typename": "K8sCluster"
+      },
+      "error": null,
+      "__typename": "K8sGetClusterRes"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "data": {
+    "K8sCreateCluster": {
+      "cluster": {
+        "uuid": "1363f027-aaf3-4572-85f7-1af38d955156",
+        "spec": {
+          "name": "k8s",
+          "is_ha": true,
+          "plugins": [],
+          "__typename": "K8sClusterSpec"
+        },
+        "worker_node_pools": [
+          {
+            "uuid": "713d580d-eef0-464f-b317-fafdf6d4d083",
+            "spec": {
+              "auto_scale": false,
+              "num_nodes": 3,
+              "min_nodes": 0,
+              "max_nodes": 0,
+              "__typename": "WorkerNodePoolSpec"
+            },
+            "__typename": "K8sWorkerNodePool"
+          }
+        ],
+        "__typename": "K8sCluster"
+      },
+      "__typename": "K8sCreateClusterRes"
+    }
+  }
+}

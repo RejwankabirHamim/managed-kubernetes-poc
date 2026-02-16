@@ -3,3 +3,4 @@
 * Cluster auto-scaling with Cluster API: https://kamaji.clastix.io/cluster-api/cluster-autoscaler/#verify-the-cluster-autoscaler
 * Building a Kubernetes Cluster as a Service platform on BareMetal: https://itnext.io/building-a-kubernetes-cluster-as-a-service-platform-on-baremetal-using-kubevirt-and-clusterapi-9d20fe8aca70
 * Autoscaler flags : https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md
+* Short Polling vs Long Polling vs WebSockets : https://youtu.be/ZBM28ZPlin8?si=nbZTJhrt7uZ1jV2a
