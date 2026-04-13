@@ -1,0 +1,14 @@
+{
+  "data": {
+    "GetVPCAggregator": {
+      "vpc": {
+        "id": "a615af33-87fd-4405-af42-bca407a2dcb4",
+        "name": "default-fra1",
+        "description": "",
+        "ipRange": "10.135.0.0/16",
+        "__typename": "Vpc"
+      },
+      "__typename": "VPCResponse"
+    }
+  }
+}

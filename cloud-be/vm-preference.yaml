@@ -17,3 +17,5 @@ spec:
       secureBoot: true
   machine:
     preferredMachineType: q35
+
+## Warning: PreferredCPUTopology preferSockets is deprecated for removal in a future release, please use sockets instead

@@ -1,0 +1,328 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: newcls100
+  namespace: newcls100-kx97w4
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.243.0.0/16
+    services:
+      cidrBlocks:
+        - 10.95.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: control-plane
+    namespace: newcls100-kx97w4
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: KubevirtCluster
+    name: newcls100
+    namespace: newcls100-kx97w4
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtCluster
+metadata:
+  name: newcls100
+  namespace: newcls100-kx97w4
+spec:
+  controlPlaneServiceTemplate:
+    metadata:
+      annotations:
+        kube-vip.io/loadbalancerIPs: 0.0.0.0
+    spec:
+      type: LoadBalancer
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: control-plane
+  namespace: newcls100-kx97w4
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        metadata:
+          namespace: newcls100-kx97w4
+        spec:
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: 0
+                  sockets: 1
+                  threads: 1
+                devices:
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: containervolume
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                    - bridge: {}
+                      model: virtio
+                      name: secondary
+                  networkInterfaceMultiqueue: true
+                resources:
+                  limits:
+                    cpu: 0
+                    memory: 8Gi
+                  requests:
+                    cpu: 0
+                    memory: 8Gi
+              evictionStrategy: External
+              networks:
+                - multus:
+                    networkName: default/vmnet
+                  name: default
+                - name: secondary
+                  pod: {}
+              volumes:
+                - containerDisk:
+                    image: quay.io/capk/ubuntu-2204-container-disk:v1.27.14
+                  name: containervolume
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: control-plane
+  namespace: newcls100-kx97w4
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      networking:
+        dnsDomain: newcls100.newcls100-kx97w4.local
+        podSubnet: 10.243.0.0/16
+        serviceSubnet: 10.95.0.0/16
+    initConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: KubevirtMachineTemplate
+      name: control-plane
+      namespace: newcls100-kx97w4
+  replicas: 1
+  version: v1.27.14
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: pool-1
+  namespace: newcls100-kx97w4
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        spec:
+          dataVolumeTemplates:
+            - metadata:
+                name: pool-1-boot-volume
+              spec:
+                pvc:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 20Gi
+                  storageClassName: hvl
+                source:
+                  registry:
+                    url: docker://quay.io/capk/ubuntu-2204-container-disk:v1.27.14
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: 2
+                  sockets: 1
+                  threads: 1
+                devices:
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: dv-volume
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                    - bridge: {}
+                      model: virtio
+                      name: secondary
+                resources:
+                  limits:
+                    cpu: 2
+                    memory: 4Gi
+                  requests:
+                    cpu: 2
+                    memory: 4Gi
+              evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
+                - multus:
+                    networkName: default/vmnet
+                  name: secondary
+              volumes:
+                - dataVolume:
+                    name: pool-1-boot-volume
+                  name: dv-volume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: pool-1
+  namespace: newcls100-kx97w4
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: pool-1
+  namespace: newcls100-kx97w4
+spec:
+  clusterName: newcls100
+  replicas: 0
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: pool-1
+          namespace: newcls100-kx97w4
+      clusterName: newcls100
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: KubevirtMachineTemplate
+        name: pool-1
+        namespace: newcls100-kx97w4
+      version: v1.27.14
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: pool-2
+  namespace: newcls100-kx97w4
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        spec:
+          dataVolumeTemplates:
+            - metadata:
+                name: pool-2-boot-volume
+              spec:
+                pvc:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 20Gi
+                  storageClassName: hvl
+                source:
+                  registry:
+                    url: docker://quay.io/capk/ubuntu-2204-container-disk:v1.27.14
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: 4
+                  sockets: 1
+                  threads: 1
+                devices:
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: dv-volume
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                    - bridge: {}
+                      model: virtio
+                      name: secondary
+                resources:
+                  limits:
+                    cpu: 4
+                    memory: 8Gi
+                  requests:
+                    cpu: 4
+                    memory: 8Gi
+              evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
+                - multus:
+                    networkName: default/vmnet
+                  name: secondary
+              volumes:
+                - dataVolume:
+                    name: pool-2-boot-volume
+                  name: dv-volume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: pool-2
+  namespace: newcls100-kx97w4
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/cpu: "4"
+    capacity.cluster-autoscaler.kubernetes.io/memory: 8Gi
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "5"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "1"
+  name: pool-2
+  namespace: newcls100-kx97w4
+spec:
+  clusterName: newcls100
+  replicas: 1
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: pool-2
+          namespace: newcls100-kx97w4
+      clusterName: newcls100
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: KubevirtMachineTemplate
+        name: pool-2
+        namespace: newcls100-kx97w4
+      version: v1.27.14

@@ -1,8 +1,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: capi-slowstart
-  namespace: default
+  name: hamim-test
+  namespace: hamim-test-xjp9nw
 spec:
   clusterNetwork:
     pods:
@@ -14,28 +14,28 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
     kind: KamajiControlPlane
-    name: capi-slowstart-kubevirt
-    namespace: default
+    name: hamim-test-control-plane
+    namespace: hamim-test-xjp9nw
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
     kind: KubevirtCluster
-    name: capi-slowstart
-    namespace: default
+    name: hamim-test
+    namespace: hamim-test-xjp9nw
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtCluster
 metadata:
   annotations:
     cluster.x-k8s.io/managed-by: kamaji
-  name: capi-slowstart
-  namespace: default
+  name: hamim-test
+  namespace: hamim-test-xjp9nw
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
 kind: KamajiControlPlane
 metadata:
-  name: capi-slowstart-kubevirt
-  namespace: default
+  name: hamim-test-control-plane
+  namespace: hamim-test-xjp9nw
 spec:
   addons:
     coreDNS:
@@ -54,14 +54,14 @@ spec:
     serviceAnnotations:
       kube-vip.io/loadbalancerIPs: 0.0.0.0
     serviceType: LoadBalancer
-  replicas: 2
+  replicas: 3
   version: v1.30.1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
-  name: capi-slowstart-md-0
-  namespace: default
+  name: hamim-test-md-0
+  namespace: hamim-test-xjp9nw
 spec:
   template:
     spec:
@@ -71,7 +71,7 @@ spec:
         spec:
           dataVolumeTemplates:
             - metadata:
-                name: capik-md-0-boot-volume
+                name: hamim-test-boot-volume
               spec:
                 pvc:
                   accessModes:
@@ -88,53 +88,48 @@ spec:
             spec:
               domain:
                 cpu:
-                  cores: 4
+                  cores: 2
                   sockets: 1
                   threads: 1
                 devices:
                   disks:
                     - disk:
                         bus: virtio
-                      name: containervolume
+                      name: dv-volume
                   interfaces:
                     - bridge: {}
                       model: virtio
-                      name: secondary
+                      name: default
                     - bridge: {}
                       model: virtio
-                      name: default
+                      name: secondary
                 resources:
                   limits:
-                    cpu: 4
-                    memory: 16Gi
+                    cpu: 2
+                    memory: 4Gi
                   requests:
-                    cpu: 4
-                    memory: 16Gi
+                    cpu: 2
+                    memory: 4Gi
               evictionStrategy: External
               networks:
+                - name: default
+                  pod: {}
                 - multus:
                     networkName: default/vmnet
                   name: secondary
-                - name: default
-                  pod: {}
               volumes:
                 - dataVolume:
-                    name: capik-md-0-boot-volume
-                  name: containervolume
+                    name: hamim-test-boot-volume
+                  name: dv-volume
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: capi-slowstart-md-0
-  namespace: default
+  name: hamim-test-md-0
+  namespace: hamim-test-xjp9nw
 spec:
   template:
     spec:
-      users:
-        - name: myuser                  # e.g. your preferred username
-          sudo: ALL=(ALL) NOPASSWD:ALL  # optional: give sudo without password
-          sshAuthorizedKeys:
-            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCzc0+9R4uEmf81h7yrkyM750HF1pMyo5LSx5oXL2VA1/4fP4+FZ7zHQi+0azkyeybEvBqR8ga4NIeRO2gYVnz9TCorGBzpHIcRZ4A0+tGBD2/nD6bRJJ98koNRSJX5/R8fBfxUSdK4pSTkP5d7wk8ZFeo+S47tHY9hSHGskTdSs6IGsQy535hxazJViKVP63oMlOB4tZ9s6TKnlAsty+Ev+aQie6Rg/wW4ybx9Ju62Alzgrt9b8HQzFDz0vBUOzhiqgnKS9KLrmYWJjro49nlEILkO6XCSelagHTcsB+PEvCbcJqCITJ4o1x976sWaPVSiJ5kX2WD5cdraAUsfTYVq34Dn3cZFMQSmLCxdXPTBGAsbOPL6xXFX8IcytJ4zTCQE+F5qe5dy3CfVyQKOgAe49znguKiB3WFeg1wU0P5Gpm+mW/2+4jAz5V+ia/PZPe4jyeJh2OzN2LNE+cWq8S2CZDVoliX7FExTky8/AlqrOvXDD6gq4sIwhKBLW3At6TTE3C0Yu9sySOfvtRMTgMYa1Dmi371rLacPtCFt1Or/RHpJSt9ablPuAMpjn+hix8SnSfHSD4wkNN3p9P2K+gDpgZFwNQNZbu6pn9b1dUPgqmudXNY8ZQcSI73IpznnVMfNAHynNLYrahamSs0L0nCIwgZ7yVmYJyLCXRWqMwKBpQ== suman@appscode.com
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs: {}
@@ -142,11 +137,11 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: capi-slowstart-md-0
-  namespace: default
+  name: hamim-test-md-0
+  namespace: hamim-test-xjp9nw
 spec:
-  clusterName: capi-slowstart
-  replicas: 2
+  clusterName: hamim-test
+  replicas: 1
   selector:
     matchLabels: null
   template:
@@ -155,12 +150,12 @@ spec:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: KubeadmConfigTemplate
-          name: capi-slowstart-md-0
-          namespace: default
-      clusterName: capi-slowstart
+          name: hamim-test-md-0
+          namespace: hamim-test-xjp9nw
+      clusterName: hamim-test
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: KubevirtMachineTemplate
-        name: capi-slowstart-md-0
-        namespace: default
+        name: hamim-test-md-0
+        namespace: hamim-test-xjp9nw
       version: v1.30.1
