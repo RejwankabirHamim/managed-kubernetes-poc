@@ -1,0 +1,17 @@
+{
+  "data": {
+    "K8sDeleteWorkerNodePool": {
+      "worker_node_pool": {
+        "spec": {
+          "name": "pool-46z76f7ip",
+          "__typename": "WorkerNodePoolSpec"
+        },
+        "uuid": "d6742ba6-47e0-4b4f-b9a2-011807fd2ef0",
+        "__typename": "K8sWorkerNodePool"
+      },
+      "__typename": "K8sDeleteWorkerNodePoolRes"
+    }
+  }
+}
+
+// validation error: cannot delete the last non-empty worker node pool in cluster

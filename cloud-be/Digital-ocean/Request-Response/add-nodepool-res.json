@@ -1,0 +1,48 @@
+{
+  "data": {
+    "K8sCreateWorkerNodePool": {
+      "worker_node_pool": {
+        "uuid": "3683b5fc-a89b-4b69-886c-cb9add2176a1",
+        "state": "Provisioning",
+        "spec": {
+          "name": "pool-hywy3laq7",
+          "droplet_size_slug": "s-1vcpu-2gb",
+          "num_nodes": 1,
+          "auto_replace_outdated_nodes": null,
+          "tags": [
+            "k8s",
+            "k8s:3ac3abbd-aace-431f-abd7-f90abdca0e9a",
+            "k8s:worker"
+          ],
+          "auto_scale": false,
+          "min_nodes": 0,
+          "max_nodes": 0,
+          "__typename": "WorkerNodePoolSpec"
+        },
+        "statuses": [
+          {
+            "uuid": "9623c5ff-6a45-4cec-a2e7-c905769a383d",
+            "droplet_id": "",
+            "state": "Provisioning",
+            "timestamps": {
+              "created_at": {
+                "nanos": "0",
+                "seconds": "1776768509",
+                "__typename": "Timestamp"
+              },
+              "updated_at": {
+                "nanos": "0",
+                "seconds": "1776768509",
+                "__typename": "Timestamp"
+              },
+              "__typename": "StatusTimestamps"
+            },
+            "__typename": "K8sWorkerNodeStatus"
+          }
+        ],
+        "__typename": "K8sWorkerNodePool"
+      },
+      "__typename": "K8sCreateWorkerNodePoolRes"
+    }
+  }
+}

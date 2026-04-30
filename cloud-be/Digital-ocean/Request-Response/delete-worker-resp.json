@@ -1,0 +1,11 @@
+{
+  "data": {
+    "K8sDeleteWorkerNode": {
+      "status": {
+        "uuid": "53e67232-c425-4b0d-ac1b-38a9e8d739ac",
+        "__typename": "K8sWorkerNodeStatus"
+      },
+      "__typename": "K8sDeleteWorkerNodeRes"
+    }
+  }
+}

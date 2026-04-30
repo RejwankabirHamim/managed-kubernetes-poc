@@ -1,0 +1,15 @@
+{
+  "operationName": "K8sCreateWorkerNodePool",
+  "variables": {
+    "payload": {
+      "spec": {
+        "droplet_size_slug": "s-1vcpu-2gb",
+        "name": "pool-hywy3laq7",
+        "num_nodes": 1,
+        "auto_scale": false
+      },
+      "cluster_uuid": "3ac3abbd-aace-431f-abd7-f90abdca0e9a"
+    }
+  },
+  "query": "mutation K8sCreateWorkerNodePool($payload: K8sCreateWorkerNodePoolReq) {\n  K8sCreateWorkerNodePool(K8sCreateWorkerNodePoolReq: $payload) {\n    worker_node_pool {\n      uuid\n      state\n      spec {\n        name\n        droplet_size_slug\n        num_nodes\n        auto_replace_outdated_nodes\n        tags\n        auto_scale\n        min_nodes\n        max_nodes\n        __typename\n      }\n      statuses {\n        uuid\n        droplet_id\n        state\n        timestamps {\n          created_at {\n            nanos\n            seconds\n            __typename\n          }\n          updated_at {\n            nanos\n            seconds\n            __typename\n          }\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+}

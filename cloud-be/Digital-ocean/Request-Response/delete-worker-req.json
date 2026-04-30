@@ -1,0 +1,11 @@
+{
+  "operationName": "DeleteWorkerNode",
+  "variables": {
+    "payload": {
+      "cluster_uuid": "3f8fd885-c871-4952-a65d-e5bf2f9a2db9",
+      "worker_node_pool_uuid": "6e6b0df1-cd54-4e13-90ea-b53e201cef9c",
+      "worker_node_uuid": "53e67232-c425-4b0d-ac1b-38a9e8d739ac"
+    }
+  },
+  "query": "mutation DeleteWorkerNode($payload: K8sDeleteWorkerNodeReq) {\n  K8sDeleteWorkerNode(K8sDeleteWorkerNodeReq: $payload) {\n    status {\n      uuid\n      __typename\n    }\n    __typename\n  }\n}\n"
+}

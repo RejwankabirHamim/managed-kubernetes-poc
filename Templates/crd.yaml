@@ -1,0 +1,266 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineSet
+metadata:
+  annotations:
+    cluster.x-k8s.io/disable-machine-create: "false"
+    machinedeployment.clusters.x-k8s.io/desired-replicas: "2"
+    machinedeployment.clusters.x-k8s.io/max-replicas: "3"
+    machinedeployment.clusters.x-k8s.io/revision: "1"
+  creationTimestamp: "2026-04-30T08:35:20Z"
+  deletionGracePeriodSeconds: 0
+  deletionTimestamp: "2026-04-30T08:47:33Z"
+  finalizers:
+    - cluster.x-k8s.io/machineset
+  generation: 2
+  labels:
+    cluster.x-k8s.io/cluster-name: k8s-us-east-1-1-30-1-1777538075331
+    cluster.x-k8s.io/deployment-name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+    machine-template-hash: 3781782061-2drm4
+  name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool-2drm4
+  namespace: 019ddd86-99fd-7f01-aad1-882971cf2b27
+  ownerReferences:
+    - apiVersion: cluster.x-k8s.io/v1beta2
+      blockOwnerDeletion: true
+      controller: true
+      kind: MachineDeployment
+      name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      uid: 3de766ac-ac02-48ce-82e4-2ff845d792fb
+  resourceVersion: "17767209"
+  uid: f3047fc3-5983-47b7-b3c4-946f26dba7e0
+spec:
+  clusterName: k8s-us-east-1-1-30-1-1777538075331
+  replicas: 2
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: k8s-us-east-1-1-30-1-1777538075331
+      cluster.x-k8s.io/deployment-name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      machine-template-hash: 3781782061-2drm4
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: k8s-us-east-1-1-30-1-1777538075331
+        cluster.x-k8s.io/deployment-name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+        machine-template-hash: 3781782061-2drm4
+    spec:
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KubeadmConfigTemplate
+          name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      clusterName: k8s-us-east-1-1-30-1-1777538075331
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: KubevirtMachineTemplate
+        name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      version: v1.30.1
+status:
+  availableReplicas: 0
+  conditions:
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 1
+      reason: NotRemediating
+      status: "False"
+      type: Remediating
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 1
+      reason: NotScalingDown
+      status: "False"
+      type: ScalingDown
+    - lastTransitionTime: "2026-04-30T08:36:21Z"
+      message: ""
+      observedGeneration: 1
+      reason: NotScalingUp
+      status: "False"
+      type: ScalingUp
+    - lastTransitionTime: "2026-04-30T08:36:21Z"
+      message: |-
+        * Machines 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool-2drm4-xk7zr, 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool-2drm4-xt6b6:
+          * NodeHealthy:
+            * Node.Ready: container runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:Network plugin returns error: cni plugin not initialized
+      observedGeneration: 1
+      reason: NotReady
+      status: "False"
+      type: MachinesReady
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 1
+      reason: UpToDate
+      status: "True"
+      type: MachinesUpToDate
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 1
+      reason: NotPaused
+      status: "False"
+      type: Paused
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 1
+      reason: NotDeleting
+      status: "False"
+      type: Deleting
+  deprecated:
+    v1beta1:
+      availableReplicas: 0
+      conditions:
+        - lastTransitionTime: "2026-04-30T08:36:21Z"
+          message: Scaling up MachineSet to 2 replicas (actual 0)
+          reason: ScalingUp
+          severity: Warning
+          status: "False"
+          type: Ready
+        - lastTransitionTime: "2026-04-30T08:36:21Z"
+          status: "True"
+          type: MachinesCreated
+        - lastTransitionTime: "2026-04-30T08:44:35Z"
+          status: "True"
+          type: MachinesReady
+        - lastTransitionTime: "2026-04-30T08:35:31Z"
+          message: Scaling up MachineSet to 2 replicas (actual 0)
+          reason: ScalingUp
+          severity: Warning
+          status: "False"
+          type: Resized
+      fullyLabeledReplicas: 2
+      readyReplicas: 0
+  observedGeneration: 1
+  readyReplicas: 0
+  replicas: 2
+  selector: cluster.x-k8s.io/cluster-name=k8s-us-east-1-1-30-1-1777538075331,cluster.x-k8s.io/deployment-name=019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool,machine-template-hash=3781782061-2drm4
+  upToDateReplicas: 2
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineSet
+metadata:
+  annotations:
+    cluster.x-k8s.io/disable-machine-create: "false"
+    machinedeployment.clusters.x-k8s.io/desired-replicas: "2"
+    machinedeployment.clusters.x-k8s.io/max-replicas: "3"
+    machinedeployment.clusters.x-k8s.io/revision: "2"
+    machinedeployment.clusters.x-k8s.io/revision-history: "1"
+  creationTimestamp: "2026-04-30T08:35:10Z"
+  deletionGracePeriodSeconds: 0
+  deletionTimestamp: "2026-04-30T08:47:33Z"
+  finalizers:
+    - cluster.x-k8s.io/machineset
+  generation: 2
+  labels:
+    cluster.x-k8s.io/cluster-name: k8s-us-east-1-1-30-1-1777538075331
+    cluster.x-k8s.io/deployment-name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+    machine-template-hash: 3781782061-crlmg
+  name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool-crlmg
+  namespace: 019ddd86-99fd-7f01-aad1-882971cf2b27
+  ownerReferences:
+    - apiVersion: cluster.x-k8s.io/v1beta2
+      blockOwnerDeletion: true
+      controller: true
+      kind: MachineDeployment
+      name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      uid: 3de766ac-ac02-48ce-82e4-2ff845d792fb
+  resourceVersion: "17772594"
+  uid: a0cafec3-f965-4eb5-9c06-379fa6fe00ea
+spec:
+  clusterName: k8s-us-east-1-1-30-1-1777538075331
+  replicas: 2
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: k8s-us-east-1-1-30-1-1777538075331
+      cluster.x-k8s.io/deployment-name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      machine-template-hash: 3781782061-crlmg
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: k8s-us-east-1-1-30-1-1777538075331
+        cluster.x-k8s.io/deployment-name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+        machine-template-hash: 3781782061-crlmg
+    spec:
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KubeadmConfigTemplate
+          name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      clusterName: k8s-us-east-1-1-30-1-1777538075331
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: KubevirtMachineTemplate
+        name: 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool
+      version: v1.30.1
+status:
+  availableReplicas: 0
+  conditions:
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 2
+      reason: NotRemediating
+      status: "False"
+      type: Remediating
+    - lastTransitionTime: "2026-04-30T08:48:11Z"
+      message: Scaling down from 2 to 0 replicas
+      observedGeneration: 2
+      reason: ScalingDown
+      status: "True"
+      type: ScalingDown
+    - lastTransitionTime: "2026-04-30T08:36:21Z"
+      message: ""
+      observedGeneration: 2
+      reason: NotScalingUp
+      status: "False"
+      type: ScalingUp
+    - lastTransitionTime: "2026-04-30T08:36:21Z"
+      message: |-
+        * Machines 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool-crlmg-wdb6l, 019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool-crlmg-zb5m6:
+          * NodeHealthy:
+            * Node.Ready: container runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:Network plugin returns error: cni plugin not initialized
+      observedGeneration: 2
+      reason: NotReady
+      status: "False"
+      type: MachinesReady
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 2
+      reason: UpToDate
+      status: "True"
+      type: MachinesUpToDate
+    - lastTransitionTime: "2026-04-30T08:35:31Z"
+      message: ""
+      observedGeneration: 2
+      reason: NotPaused
+      status: "False"
+      type: Paused
+    - lastTransitionTime: "2026-04-30T08:48:11Z"
+      message: Deleting 2 Machines
+      observedGeneration: 2
+      reason: Deleting
+      status: "True"
+      type: Deleting
+  deprecated:
+    v1beta1:
+      availableReplicas: 0
+      conditions:
+        - lastTransitionTime: "2026-04-30T08:48:11Z"
+          message: Scaling down MachineSet to 0 replicas (actual 2)
+          reason: ScalingDown
+          severity: Warning
+          status: "False"
+          type: Ready
+        - lastTransitionTime: "2026-04-30T08:36:21Z"
+          status: "True"
+          type: MachinesCreated
+        - lastTransitionTime: "2026-04-30T08:45:25Z"
+          status: "True"
+          type: MachinesReady
+        - lastTransitionTime: "2026-04-30T08:48:11Z"
+          message: Scaling down MachineSet to 0 replicas (actual 2)
+          reason: ScalingDown
+          severity: Warning
+          status: "False"
+          type: Resized
+      fullyLabeledReplicas: 2
+      readyReplicas: 0
+  observedGeneration: 2
+  readyReplicas: 0
+  replicas: 2
+  selector: cluster.x-k8s.io/cluster-name=k8s-us-east-1-1-30-1-1777538075331,cluster.x-k8s.io/deployment-name=019ddd86-99fd-7f01-aad1-882971cf2b27-default-pool,machine-template-hash=3781782061-crlmg
+  upToDateReplicas: 2

@@ -22,3 +22,5 @@ min & count na thakle
 
 
 * In delete k8s api, when host cluster unreachable, infra namespace deletion make workflow failed
+
+* Even digital ocean didn't support nodepool rename in old days, but now they support it. Ref: https://www.digitalocean.com/community/questions/how-to-rename-kubernetes-clusters-and-node-pools

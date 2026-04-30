@@ -1,0 +1,13 @@
+{
+  "operationName": "UpdateWorkerNodePool",
+  "variables": {
+    "payload": {
+      "cluster_uuid": "3f8fd885-c871-4952-a65d-e5bf2f9a2db9",
+      "min_nodes": 0,
+      "max_nodes": 2,
+      "auto_scale": true,
+      "worker_node_pool_uuid": "d6742ba6-47e0-4b4f-b9a2-011807fd2ef0"
+    }
+  },
+  "query": "mutation UpdateWorkerNodePool($payload: K8sUpdateWorkerNodePoolReq) {\n  K8sUpdateWorkerNodePool(K8sUpdateWorkerNodePoolReq: $payload) {\n    worker_node_pool {\n      spec {\n        name\n        tags\n        min_nodes\n        max_nodes\n        auto_scale\n        num_nodes\n        labels\n        taints {\n          key\n          value\n          effect\n          __typename\n        }\n        __typename\n      }\n      uuid\n      __typename\n    }\n    __typename\n  }\n}\n"
+}

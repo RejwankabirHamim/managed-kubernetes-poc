@@ -12,3 +12,5 @@
     }
   }
 }
+
+//validation error: VPC native custom_CIDR.VPC CIDR validation returned negative result: rpc error: code = InvalidArgument desc = This range/size overlaps with another VPC network in your account: default-ric1 10.150.0.0/20.

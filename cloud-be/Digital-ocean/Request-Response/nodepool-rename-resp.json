@@ -1,0 +1,26 @@
+{
+  "data": {
+    "K8sUpdateWorkerNodePool": {
+      "worker_node_pool": {
+        "spec": {
+          "name": "pool-bb",
+          "tags": [
+            "k8s",
+            "k8s:9e48bd89-69d4-4b0c-a95f-fb95138ff60b",
+            "k8s:worker"
+          ],
+          "min_nodes": 0,
+          "max_nodes": 0,
+          "auto_scale": false,
+          "num_nodes": 1,
+          "labels": {},
+          "taints": [],
+          "__typename": "WorkerNodePoolSpec"
+        },
+        "uuid": "7b1a515a-e3c7-4c9a-8879-a48b29d26098",
+        "__typename": "K8sWorkerNodePool"
+      },
+      "__typename": "K8sUpdateWorkerNodePoolRes"
+    }
+  }
+}
