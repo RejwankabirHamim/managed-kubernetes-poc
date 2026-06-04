@@ -82,3 +82,11 @@ Reason: OOMKilled
 memory limit is only 100Mi.
 
 
+# 4. Etcd alarm No space:
+
+```azure
+kubectl delete cluster -n managed-n95rbk managed
+Error from server: etcdserver: mvcc: database space exceeded
+```
+
+Reason: A NOSPACE alarm is issued in the event that etcd runs low on storage space, to protect the cluster from further writes. Once this low storage space state is reached, etcd will respond to all write requests with the mvcc: database space exceeded error message until the issue is solved.
