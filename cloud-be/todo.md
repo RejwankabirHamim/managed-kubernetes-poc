@@ -26,3 +26,5 @@ min & count na thakle
 * Even digital ocean didn't support nodepool rename in old days, but now they support it. Ref: https://www.digitalocean.com/community/questions/how-to-rename-kubernetes-clusters-and-node-pools
 
 *Tag in digital ocean: https://docs.digitalocean.com/glossary/tag/
+
+quay.io/capk/capk-manager:v0.10.4
