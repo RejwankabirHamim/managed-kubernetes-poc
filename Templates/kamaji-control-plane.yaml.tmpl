@@ -1,0 +1,63 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: "${CLUSTER_NAME}"
+  namespace: "${NAMESPACE}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.243.0.0/16
+    services:
+      cidrBlocks:
+        - 10.95.0.0/16 
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: KamajiControlPlane
+    name: '${CLUSTER_NAME}-control-plane'
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: KubevirtCluster
+    name: '${CLUSTER_NAME}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtCluster
+metadata:
+  annotations:
+    cluster.x-k8s.io/managed-by: kamaji
+  name: "${CLUSTER_NAME}"
+  namespace: "${NAMESPACE}"
+spec: {}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
+kind: KamajiControlPlane
+metadata:
+  name: '${CLUSTER_NAME}-control-plane'
+  namespace: "${NAMESPACE}"
+spec:
+  apiServer:
+    extraArgs:
+      - --cloud-provider=external
+  controllerManager:
+    extraArgs:
+      - --cloud-provider=external
+  dataStoreName: default
+  addons:
+    coreDNS:
+      dnsServiceIPs:
+        - 10.95.0.10
+    kubeProxy: {}
+    konnectivity: {}
+  kubelet:
+    cgroupfs: systemd
+    preferredAddressTypes:
+      - InternalIP
+      - ExternalIP
+  network:
+    serviceType: LoadBalancer
+    serviceAnnotations:
+      kube-vip.io/loadbalancerIPs: 0.0.0.0
+  deployment:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: "${KUBERNETES_VERSION}"

@@ -1,0 +1,125 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: "{{ .name }}"
+  namespace: "${NAMESPACE}"
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        metadata:
+          annotations:
+            openstack-network-id: "6fdf82fd-659c-435b-9452-2677689229b5"
+            openstack-security-groups: '["disable"]'
+            openstack-subnet-ids: '["a6b34727-fd97-4085-ba63-7784195218a4"]'
+        spec:
+          dataVolumeTemplates:
+            - metadata:
+                name: "{{ .name }}-boot-volume"
+              spec:
+                pvc:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: {{.storage}}
+                  storageClassName: "${INFRA_CLUSTER_STORAGE_CLASS_NAME}"
+                source:
+                  registry:
+                    url: "docker://${NODE_VM_IMAGE_TEMPLATE}"
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  # Expose product vCPUs as guest-visible cores; sockets and threads default to 1.
+                  cores: {{.limit_cpu}}
+{{ if .dedicated_cpu_placement }}
+                  dedicatedCpuPlacement: true
+{{ end }}
+{{ if .isolate_emulator_thread }}
+                  isolateEmulatorThread: true
+{{ end }}
+                devices:
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: dv-volume
+                memory:
+                  guest: "{{.limit_memory}}"
+                resources:
+                  requests:
+{{ if not .dedicated_cpu_placement }}
+                    cpu: {{.request_cpu}}
+{{ end }}
+                    memory: "{{.request_memory}}"
+                  limits:
+{{ if not .dedicated_cpu_placement }}
+                    cpu: {{.limit_cpu}}
+{{ end }}
+                    memory: "{{.limit_memory}}"
+              evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
+              volumes:
+                - dataVolume:
+                    name: "{{ .name }}-boot-volume"
+                  name: dv-volume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KubeadmConfigTemplate
+metadata:
+  name: "{{ .name }}"
+  namespace: "${NAMESPACE}"
+spec:
+  template:
+    spec:
+      preKubeadmCommands:
+        - apt-get update
+        - apt-get install -y qemu-guest-agent
+        - systemctl enable --now qemu-guest-agent.service
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+          - name: "cloud-provider"
+            value: "external"
+          criSocket: "${CRI_PATH}"
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: "{{ .name }}"
+  namespace: "${NAMESPACE}"
+{{- if .auto_scale}}
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "{{.min_nodes}}"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "{{.max_nodes}}"
+    capacity.cluster-autoscaler.kubernetes.io/cpu: "{{.limit_cpu}}"
+    capacity.cluster-autoscaler.kubernetes.io/memory: "{{.limit_memory}}"
+{{- end}}
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: {{.node_count}}
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KubeadmConfigTemplate
+          name: "{{ .name }}"
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: KubevirtMachineTemplate
+        name: "{{ .name }}"

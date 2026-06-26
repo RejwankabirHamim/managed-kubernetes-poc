@@ -27,4 +27,8 @@ min & count na thakle
 
 *Tag in digital ocean: https://docs.digitalocean.com/glossary/tag/
 
+
+*** Kamaji pods:
+The kube-apiserver is using the flag --etcd-compaction-interval=0, which effectively disables automatic compaction. This could lead to performance issues in etcd over time due to a growing database size.
+
 quay.io/capk/capk-manager:v0.10.4

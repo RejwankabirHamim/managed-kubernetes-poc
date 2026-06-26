@@ -29,12 +29,18 @@ metadata:
   namespace: new
 spec: {}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: capi-slowstart-kubevirt
   namespace: new
 spec:
+  apiServer:
+    extraArgs:
+      - --cloud-provider=external
+  controllerManager:
+    extraArgs:
+      - --cloud-provider=external
   addons:
     coreDNS:
       dnsServiceIPs:
@@ -66,6 +72,11 @@ spec:
       virtualMachineBootstrapCheck:
         checkStrategy: none
       virtualMachineTemplate:
+        metadata:
+          annotations:
+            openstack-network-id: "6fdf82fd-659c-435b-9452-2677689229b5"
+            openstack-security-groups: '["disable"]'
+            openstack-subnet-ids: '["a6b34727-fd97-4085-ba63-7784195218a4"]'
         spec:
           dataVolumeTemplates:
             - metadata:
@@ -76,7 +87,7 @@ spec:
                     - ReadWriteOnce
                   resources:
                     requests:
-                      storage: 100Gi
+                      storage: 20Gi
                   storageClassName: hvl
                 source:
                   registry:
@@ -98,9 +109,6 @@ spec:
                     - bridge: {}
                       model: virtio
                       name: default
-                    - bridge: {}
-                      model: virtio
-                      name: defaultpod
                 memory:
                   guest: 16Gi
                 resources:
@@ -115,8 +123,6 @@ spec:
                 - multus:
                     networkName: default/vmnet
                   name: default
-                - pod: {}
-                  name: defaultpod
               volumes:
                 - dataVolume:
                     name: capik-md-0-boot-volume
@@ -130,11 +136,20 @@ metadata:
 spec:
   template:
     spec:
+      preKubeadmCommands:
+        - apt-get update
+        - apt-get install -y qemu-guest-agent
+        - systemctl enable --now qemu-guest-agent.service
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            - name: "cloud-provider"
+              value: "external"
       users:
         - name: myuser
           sudo: ALL=(ALL) NOPASSWD:ALL
           sshAuthorizedKeys:
-            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCRPQ0sjY5ecxcpqYAGuk094qW0XdCe/t34U+hFEnV6yOnftjMYHO+1l/s5J6bgN4X4czRJ/wmfiKjjqiBzhGL0TgViPmxLZpezbsdQ41mA1yE6+pUsRc5pT8mZBhpmm5S0sCHGemt8n10nZUPvG0NDgufYq6C9PAuKoweh2TujG4D1E1t1E/yxOOZx8IhF19Hw6lHBknkBuiwBPGlhCKvVcYw6IgoS8AFkMYw86bRmKG4ux2DRtsXk1RAZQmvl25s+iUgTq5jSpXDvsgnQdQoykqcbzckV5vqxhb+3QPjAP8QVU+ZoNm+h/QmPk3sWhvJ+DJyFJ6l83BWK+pDdUBi2FEISflLLMSSzidICLuw1OdJTrnfIPVCpO9CJYjrwcIWpEmI+WddrAYtteBTVnpcT/pmo96f3ErYnQELYbE6eQfQOAH4mdVPCSdgIMJB/qMqOgGmLTOFHjVAHrkAc342tPkmL5ASnLlGNL9Z7ZRHB6ACeNJuz3BdGCjAS6RpfcOM= hamim@appscode.com
+            - ssh-rsa ............
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
@@ -143,7 +158,7 @@ metadata:
   namespace: new
 spec:
   clusterName: capi-slowstart
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels: null
   template:

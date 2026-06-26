@@ -1,0 +1,135 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: "${CLUSTER_NAME}"
+  namespace: "${NAMESPACE}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.243.0.0/16
+    services:
+      cidrBlocks:
+        - 10.95.0.0/16
+    serviceDomain: "${CLUSTER_NAME}.${NAMESPACE}.local"
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: KubevirtCluster
+    name: '${CLUSTER_NAME}'
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: '${CONTROL_PLANE_NAME}'
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtCluster
+metadata:
+  name: "${CLUSTER_NAME}"
+  namespace: "${NAMESPACE}"
+spec:
+  controlPlaneServiceTemplate:
+    metadata:
+      annotations:
+        kube-vip.io/loadbalancerIPs: 0.0.0.0
+    spec:
+      type: LoadBalancer
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: "${CONTROL_PLANE_NAME}"
+  namespace: "${NAMESPACE}"
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        metadata:
+          annotations:
+            openstack-network-id: "6fdf82fd-659c-435b-9452-2677689229b5"
+            openstack-security-groups: '["disable"]'
+            openstack-subnet-ids: '["a6b34727-fd97-4085-ba63-7784195218a4"]'
+        spec:
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  # Expose product vCPUs as guest-visible cores; sockets and threads default to 1.
+                  cores: ${CONTROL_PLANE_MACHINE_LIMIT_CPU}
+{{ if .controlplane_dedicated_cpu_placement }}
+                  dedicatedCpuPlacement: true
+{{ end }}
+{{ if .controlplane_isolate_emulator_thread }}
+                  isolateEmulatorThread: true
+{{ end }}
+                devices:
+                  disks:
+                    - disk:
+                        bus: virtio
+                      name: containervolume
+                  interfaces:
+                    - bridge: {}
+                      model: virtio
+                      name: default
+                  networkInterfaceMultiqueue: true
+                memory:
+                  guest: "${CONTROL_PLANE_MACHINE_LIMIT_MEMORY}"
+                resources:
+                  requests:
+{{ if not .controlplane_dedicated_cpu_placement }}
+                    cpu: ${CONTROL_PLANE_MACHINE_REQUEST_CPU}
+{{ end }}
+                    memory: "${CONTROL_PLANE_MACHINE_REQUEST_MEMORY}"
+                  limits:
+{{ if not .controlplane_dedicated_cpu_placement }}
+                    cpu: ${CONTROL_PLANE_MACHINE_LIMIT_CPU}
+{{ end }}
+                    memory: "${CONTROL_PLANE_MACHINE_LIMIT_MEMORY}"
+              evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
+              volumes:
+                - containerDisk:
+                    image: "${NODE_VM_IMAGE_TEMPLATE}"
+                  name: containervolume
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+metadata:
+  name: "${CONTROL_PLANE_NAME}"
+  namespace: "${NAMESPACE}"
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  machineTemplate:
+    spec:
+      infrastructureRef:
+        kind: KubevirtMachineTemplate
+        apiGroup: infrastructure.cluster.x-k8s.io
+        name: "${CONTROL_PLANE_NAME}"
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+        - name: "cloud-provider"
+          value: "external"
+      controllerManager:
+        extraArgs:
+        - name: "cloud-provider"
+          value: "external"
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+        - name: "cloud-provider"
+          value: "external"
+        criSocket: "${CRI_PATH}"
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+        - name: "cloud-provider"
+          value: "external"
+        criSocket: "${CRI_PATH}"
+  version: "${KUBERNETES_VERSION}"

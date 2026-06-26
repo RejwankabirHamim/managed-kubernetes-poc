@@ -1,0 +1,77 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: my-cluster-workers
+  namespace: my-cluster-ns
+spec:
+  template:
+    spec:
+      files:
+        - path: /usr/bin/update-k8s.sh
+          owner: root:root
+          permissions: "0755"
+          content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            : "${KUBELET_VERSION:?KUBELET_VERSION must be set, e.g. v1.31.0}"
+            ARCH="$(uname -m)"
+            case "${ARCH}" in
+              x86_64) ARCH=amd64 ;;
+              aarch64) ARCH=arm64 ;;
+            esac
+            BASE_URL="https://dl.k8s.io/release/${KUBELET_VERSION}/bin/linux/${ARCH}"
+            echo "Installing kubelet and kubeadm ${KUBELET_VERSION} for ${ARCH}..."
+            curl -fsSL "${BASE_URL}/kubelet" -o /root/kubelet
+            curl -fsSL "${BASE_URL}/kubeadm" -o /root/kubeadm
+            chmod 0755 /root/kubelet
+            chmod 0755 /root/kubeadm
+            if /root/kubelet --version ; then mv /root/kubelet /usr/bin/kubelet ; fi
+            if /root/kubeadm version ; then mv /root/kubeadm /usr/bin/kubeadm ; fi
+
+      diskSetup:
+        filesystems:
+          - device: /dev/vdb
+            filesystem: xfs
+            label: ephemeral
+            partition: "none"
+
+      mounts:
+        - ["LABEL=ephemeral", "/ephemeral"]
+        - ["/ephemeral/kubelet", "/var/lib/kubelet", "none", "bind,nofail"]
+        - ["/ephemeral/containerd", "/var/lib/containerd", "none", "bind,nofail"]
+
+      files:
+        - path: /etc/containerd/certs.d/docker.io/hosts.toml
+          permissions: "0400"
+          content: |
+            server = "https://registry-1.docker.io"
+            
+            [host."https://mirror.internal.example.com"]
+              capabilities = ["pull", "resolve"]
+              ca = "/etc/containerd/certs.d/docker.io/ca.crt"
+
+      preKubeadmCommands:
+        - KUBELET_VERSION=v1.33.5 /usr/bin/update-k8s.sh || true
+        - sed -i 's|root:x:|root::|' /etc/passwd
+        - systemctl stop containerd.service
+        - mkdir -p /ephemeral/kubelet /ephemeral/containerd
+        - mount -o bind /ephemeral/kubelet /var/lib/kubelet
+        - mount -o bind /ephemeral/containerd /var/lib/containerd
+        - sudo sed -i '/\[plugins."io.containerd.grpc.v1.cri".registry\]/,/^\[/ s|^\(\s*config_path\s*=\s*\).*|\1"/etc/containerd/certs.d"|' /etc/containerd/config.toml
+        - systemctl start containerd.service
+
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+            node-labels: "node-role.kubernetes.io/worker="
+        discovery:
+          bootstrapToken:
+            apiServerEndpoint: my-cluster.my-cluster-ns.svc:6443
+            token: abcdef.0123456789abcdef
+            caCertHashes:
+              - sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+
+      initConfiguration:
+        skipPhases:
+          - addon/kube-proxy   /// this is for cilium kube-proxy replacement

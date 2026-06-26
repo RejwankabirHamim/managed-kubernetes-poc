@@ -120,7 +120,7 @@ spec:
         - name: myuser                  # e.g. your preferred username
           sudo: ALL=(ALL) NOPASSWD:ALL  # optional: give sudo without password
           sshAuthorizedKeys:
-            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCRPQ0sjY5ecxcpqYAGuk094qW0XdCe/t34U+hFEnV6yOnftjMYHO+1l/s5J6bgN4X4czRJ/wmfiKjjqiBzhGL0TgViPmxLZpezbsdQ41mA1yE6+pUsRc5pT8mZBhpmm5S0sCHGemt8n10nZUPvG0NDgufYq6C9PAuKoweh2TujG4D1E1t1E/yxOOZx8IhF19Hw6lHBknkBuiwBPGlhCKvVcYw6IgoS8AFkMYw86bRmKG4ux2DRtsXk1RAZQmvl25s+iUgTq5jSpXDvsgnQdQoykqcbzckV5vqxhb+3QPjAP8QVU+ZoNm+h/QmPk3sWhvJ+DJyFJ6l83BWK+pDdUBi2FEISflLLMSSzidICLuw1OdJTrnfIPVCpO9CJYjrwcIWpEmI+WddrAYtteBTVnpcT/pmo96f3ErYnQELYbE6eQfQOAH4mdVPCSdgIMJB/qMqOgGmLTOFHjVAHrkAc342tPkmL5ASnLlGNL9Z7ZRHB6ACeNJuz3BdGCjAS6RpfcOM= hamim@appscode.com
+            - ssh-rsa ............
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs: {}
