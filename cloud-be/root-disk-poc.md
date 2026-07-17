@@ -47,6 +47,12 @@ tmpfs           1.6G  4.0K  1.6G   1% /run/user/1001
 
 ```
 
+## What imported pod do
+
+CDI (Containerized Data Importer) importer pod is managed by KubeVirt. It imports a container disk image (quay.io/capk/ubuntu-2404-container-disk:v1.34.1) from a registry into a PersistentVolumeClaim as a KubeVirt disk image. Essentially it's pulling a VM disk image and writing it to a PVC.
+
+** What CDI does for kubevirt vms: 1. Download a image, 2. Create a empty pvc, 3. Copy/import the image into pvc, 4. Make the pvc as disk of kubevirt vm
+
 ## S3 
 * For an aws user with access to s3, we can create a bucket first. Then inside every bucket, we have prefixes.
 Inside the prefix, we can have objects. So the hierarchy is bucket → prefix → object. To access an object we have url : s3://bucket/prefix/file

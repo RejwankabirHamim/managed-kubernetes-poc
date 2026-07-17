@@ -32,3 +32,5 @@ min & count na thakle
 The kube-apiserver is using the flag --etcd-compaction-interval=0, which effectively disables automatic compaction. This could lead to performance issues in etcd over time due to a growing database size.
 
 quay.io/capk/capk-manager:v0.10.4
+
+** fast volume: https://kubernetes.slack.com/archives/C02EBC8984E/p1686328349708999?thread_ts=1686257814.088939&cid=C02EBC8984E

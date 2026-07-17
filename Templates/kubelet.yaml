@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: capi-slowstart
-  namespace: new
+  namespace: new1
 spec:
   clusterNetwork:
     pods:
@@ -26,21 +26,20 @@ metadata:
   annotations:
     cluster.x-k8s.io/managed-by: kamaji
   name: capi-slowstart
-  namespace: new
+  namespace: new1
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: capi-slowstart-kubevirt
-  namespace: new
+  namespace: new1
 spec:
   addons:
     coreDNS:
       dnsServiceIPs:
         - 10.95.0.10
     konnectivity: {}
-    kubeProxy: {}
   dataStoreName: default
   deployment: null
   kubelet:
@@ -65,33 +64,14 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
   name: capi-slowstart-md-0
-  namespace: new
+  namespace: new1
 spec:
   template:
     spec:
       virtualMachineBootstrapCheck:
         checkStrategy: none
       virtualMachineTemplate:
-        metadata:
-          annotations:
-            openstack-network-id: "e31344bd-5840-4e67-b9f4-42f2d022655c"
-            openstack-security-groups: '["disable"]'
-            openstack-subnet-ids: '["34ae98d5-c02d-48f7-a525-19dc6ea10032"]'
         spec:
-          dataVolumeTemplates:
-            - metadata:
-                name: capik-md-0-boot-volume
-              spec:
-                pvc:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 20Gi
-                  storageClassName: hvl
-                source:
-                  registry:
-                    url: "docker://quay.io/capk/ubuntu-2404-container-disk:v1.34.1"
           runStrategy: Always
           template:
             spec:
@@ -104,7 +84,7 @@ spec:
                   disks:
                     - disk:
                         bus: virtio
-                      name: dv-volume
+                      name: containervolume
                   interfaces:
                     - bridge: {}
                       model: virtio
@@ -123,15 +103,15 @@ spec:
                 - pod: {}
                   name: default
               volumes:
-                - dataVolume:
-                    name: capik-md-0-boot-volume
-                  name: dv-volume
+                - containerDisk:
+                    image: "quay.io/capk/ubuntu-2404-container-disk:v1.34.1"
+                  name: containervolume
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: capi-slowstart-md-0
-  namespace: new
+  namespace: new1
 spec:
   template:
     spec:
@@ -143,18 +123,14 @@ spec:
         - name: myuser
           sudo: ALL=(ALL) NOPASSWD:ALL
           sshAuthorizedKeys:
-            - ssh-rsa
+            - ssh-rsa ...
+            - ssh-rsa ..
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
-  annotations:
-    capacity.cluster-autoscaler.kubernetes.io/cpu: "4"
-    capacity.cluster-autoscaler.kubernetes.io/memory: 16Gi
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "6"
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "1"
   name: capi-slowstart-md-0
-  namespace: new
+  namespace: new1
 spec:
   clusterName: capi-slowstart
   replicas: 1

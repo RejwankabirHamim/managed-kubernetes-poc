@@ -90,3 +90,62 @@ Error from server: etcdserver: mvcc: database space exceeded
 ```
 
 Reason: A NOSPACE alarm is issued in the event that etcd runs low on storage space, to protect the cluster from further writes. Once this low storage space state is reached, etcd will respond to all write requests with the mvcc: database space exceeded error message until the issue is solved.
+
+
+# 5. Kubevirt vm can't join as node:
+
+```azure
+Yes, the previous claim is now confirmed true. Here is the detailed root cause:
+What Actually Happened
+The VM boot process has an initramfs phase followed by a real-root phase. Cloud-init ran in both phases, but the /run/kubeadm/kubeadm-join-config.yaml file it wrote in the initramfs phase was lost when the initramfs was discarded.
+Timeline from the VM journal
+Time	Event
+09:21:40	systemd-tmpfiles-setup.service runs in initramfs
+09:21:44	cloud-init-local.service starts in initramfs
+09:21:50	cloud-init.service starts in initramfs — PID 773 writes /run/kubeadm/kubeadm-join-config.yaml
+09:21:51	Root filesystem vda1 is being resized
+09:22:03	systemd-tmpfiles-setup.service is stopped in initramfs
+09:23:26	Kernel: Freeing initrd memory: 70768K — the initramfs is discarded
+09:23:26	Root filesystem vda1 is mounted and remounted read-write
+09:23:31	systemd-tmpfiles-setup.service starts again in real root
+09:23:32	cloud-init-local.service starts again in real root
+09:23:50	cloud-init.service starts again in real root — PID 719 skips write_files because it already ran
+09:24:22	cloud-config.service runs the runcmd
+09:25:57	kubeadm join fails: /run/kubeadm/kubeadm-join-config.yaml: no such file or directory
+Why the file is gone
+1. PID 773 wrote the file to the initramfs /run tmpfs.
+2. At 09:23:26 the kernel frees/discards the initramfs, destroying that tmpfs and the file in it.
+3. The real-root systemd creates a new /run tmpfs.
+4. The real-root cloud-init.service (PID 719) checks the semaphore in /var/lib/cloud/ (which survives on the root filesystem) and sees write_files already ran, so it does not re-create the file.
+5. When runcmd finally runs kubeadm join, the config file is missing.
+Which YAML Line to Fix
+The issue is in the container disk image itself — it includes/runs cloud-init inside the initramfs. The YAML line to change is:
+source:
+  registry:
+    url: "docker://quay.io/capk/ubuntu-2404-container-disk:v1.34.1"
+Recommended fixes
+Option 1 (fastest): Pin to a known-good image digest instead of the floating v1.34.1 tag. The v1.34.1 tag may have been rebuilt recently and now includes cloud-init in initramfs.
+Option 2 (proper fix): Build or use a fixed container disk image where cloud-init is not executed inside the initramfs. This means regenerating the initramfs without the cloud-initramfs-dyn-netconf hooks that pull in cloud-init.
+Option 3 (workaround YAML only): Move the qemu-guest-agent commands out of the bootstrap path and add directory creation, but this will not recreate the deleted kubeadm config file. So this is not a real fix.
+# The line to change in KubevirtMachineTemplate:
+spec:
+  template:
+    spec:
+      virtualMachineTemplate:
+        spec:
+          dataVolumeTemplates:
+            - metadata:
+                name: capik-md-0-boot-volume
+              spec:
+                pvc:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 20Gi
+                  storageClassName: hvl
+                source:
+                  registry:
+                    url: "docker://quay.io/capk/ubuntu-2404-container-disk:v1.34.1"  # <-- change this
+So the root cause is not in the KubeadmConfigTemplate or preKubeadmCommands — it's the container disk image booting cloud-init inside the initramfs and then discarding the initramfs before kubeadm join runs.
+```

@@ -2,7 +2,7 @@ apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: capi-slowstart
-  namespace: new
+  namespace: new1
 spec:
   clusterNetwork:
     pods:
@@ -26,14 +26,14 @@ metadata:
   annotations:
     cluster.x-k8s.io/managed-by: kamaji
   name: capi-slowstart
-  namespace: new
+  namespace: new1
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: capi-slowstart-kubevirt
-  namespace: new
+  namespace: new1
 spec:
   addons:
     coreDNS:
@@ -45,34 +45,45 @@ spec:
   deployment: null
   kubelet:
     cgroupfs: systemd
-    preferredAddressTypes:
-      - InternalIP
-      - ExternalIP
+    configurationJSONPatches:
+      - op: remove
+        path: /crashLoopBackOff
+      - op: remove
+        path: /imagePullCredentialsVerificationPolicy
+      - op: remove
+        path: /memoryReservationPolicy
+      - op: remove
+        path: /mergeDefaultEvictionSettings
   network:
     serviceAnnotations:
       kube-vip.io/loadbalancerIPs: 0.0.0.0
     serviceType: LoadBalancer
   replicas: 2
-  version: v1.32.1
+  version: 1.34.1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
   name: capi-slowstart-md-0
-  namespace: new
+  namespace: new1
 spec:
   template:
     spec:
       virtualMachineBootstrapCheck:
-        checkStrategy: ssh
+        checkStrategy: none
       virtualMachineTemplate:
+        metadata:
+          annotations:
+            openstack-network-id: "e31344bd-5840-4e67-b9f4-42f2d022655c"
+            openstack-security-groups: '["disable"]'
+            openstack-subnet-ids: '["34ae98d5-c02d-48f7-a525-19dc6ea10032"]'
         spec:
           runStrategy: Always
           template:
             spec:
               domain:
                 cpu:
-                  cores: 3
+                  cores: 4
                   sockets: 1
                   threads: 1
                 devices:
@@ -80,45 +91,33 @@ spec:
                     - disk:
                         bus: virtio
                       name: containervolume
-                    - name: ephemeral
-                      disk:
-                        bus: virtio
                   interfaces:
                     - bridge: {}
                       model: virtio
                       name: default
-                    - bridge: {}
-                      model: virtio
-                      name: defaultpod
                 memory:
-                  guest: 3Gi
+                  guest: 16Gi
                 resources:
                   limits:
-                    cpu: 3
-                    memory: 3Gi
+                    cpu: 4
+                    memory: 16Gi
                   requests:
-                    cpu: 3
-                    memory: 3Gi
+                    cpu: 4
+                    memory: 16Gi
               evictionStrategy: External
               networks:
-                - multus:
-                    networkName: default/vmnet
-                  name: default
                 - pod: {}
-                  name: defaultpod
+                  name: default
               volumes:
                 - containerDisk:
-                    image: "quay.io/capk/ubuntu-2404-container-disk:v1.32.1"
+                    image: "quay.io/capk/ubuntu-2404-container-disk:v1.34.1"
                   name: containervolume
-                - name: ephemeral
-                  emptyDisk:
-                    capacity: 20Gi
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: capi-slowstart-md-0
-  namespace: new
+  namespace: new1
 spec:
   template:
     spec:
@@ -130,13 +129,22 @@ spec:
         - name: myuser
           sudo: ALL=(ALL) NOPASSWD:ALL
           sshAuthorizedKeys:
-            - ssh-rsa ............
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC1Lgj/CAvmtZ4yAYrIGdK+L8GctDH1GdvvkVEK+elFiElIsRFI1ySu084ZyJ7YM4mkbBuC31jZpT8O7Y1OBwt1tqgXBZBKb0vHOsnI4i3vwrwV+n+Kk3qeHpJwC44ZdammeVjaW0NyKDxCM1fpa3KePJo3Icf+dUwl7hhIUgB5g1bmheUVPaI4Txzw1BoJaQGAu2QK9E2TEtDrvsBQ6ZWm/hOnGvJwoZP2kKODJrnfd9DPfp0U8IbrvP5nZrWD73HQOP7RCHzflX/wEy1Vk/FAxrApzf69Spx3kOnFQXupD8L083HRdJ70GDWdjpFfO/UhuvomP8I5+fqnr7Nbp6HxnzY8E65qDZkdn0AjV51PSvdv9+iBalrODVRGM56mA0NI6sf7iNL93tcxrbEI/MLlhRg8mw+x4Cx5ncR5nSkIDkFwomWOzlqw3U8TvBJZ0Z6Z0hhtv0F12EnFxdMU/GN1Ygx0w0Ovtbn0qwbC2OGT91AOlD75ztZtifvS8/8zlys= hamim@appscode.com
+            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCzc0+9R4uEmf81h7yrkyM750HF1pMyo5LSx5oXL2VA1/4fP4+FZ7zHQi+0azkyeybEvBqR8ga4NIeRO2gYVnz9TCorGBzpHIcRZ4A0+tGBD2/nD6bRJJ98koNRSJX5/R8fBfxUSdK4pSTkP5d7wk8ZFeo+S47tHY9hSHGskTdSs6IGsQy535hxazJViKVP63oMlOB4tZ9s6TKnlAsty+Ev+aQie6Rg/wW4ybx9Ju62Alzgrt9b8HQzFDz0vBUOzhiqgnKS9KLrmYWJjro49nlEILkO6XCSelagHTcsB+PEvCbcJqCITJ4o1x976sWaPVSiJ5kX2WD5cdraAUsfTYVq34Dn3cZFMQSmLCxdXPTBGAsbOPL6xXFX8IcytJ4zTCQE+F5qe5dy3CfVyQKOgAe49znguKiB3WFeg1wU0P5Gpm+mW/2+4jAz5V+ia/PZPe4jyeJh2OzN2LNE+cWq8S2CZDVoliX7FExTky8/AlqrOvXDD6gq4sIwhKBLW3At6TTE3C0Yu9sySOfvtRMTgMYa1Dmi371rLacPtCFt1Or/RHpJSt9ablPuAMpjn+hix8SnSfHSD4wkNN3p9P2K+gDpgZFwNQNZbu6pn9b1dUPgqmudXNY8ZQcSI73IpznnVMfNAHynNLYrahamSs0L0nCIwgZ7yVmYJyLCXRWqMwKBpQ== suman@appscode.com
+            - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVqfF3nzyQhTArcZvSt+0xkWN6TKLr4hps3I9MLzX67 ubuntu@bastion
+      postKubeadmCommands:
+        - |
+          MGTIP=$(ip -4 -o addr show enp1s0 | awk '{print $4}' | cut -d/ -f1)
+          mkdir -p /etc/systemd/system/ssh.socket.d
+          printf '[Socket]\nListenStream=\nListenStream=%s:22\n' "$MGTIP" > /etc/systemd/system/ssh.socket.d/override.conf
+          systemctl daemon-reload
+          systemctl restart ssh.socket
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: capi-slowstart-md-0
-  namespace: new
+  namespace: new1
 spec:
   clusterName: capi-slowstart
   replicas: 1
@@ -154,4 +162,4 @@ spec:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: KubevirtMachineTemplate
         name: capi-slowstart-md-0
-      version: v1.32.1
+      version: 1.34.1
