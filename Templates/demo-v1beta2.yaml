@@ -48,6 +48,9 @@ spec:
   deployment: null
   kubelet:
     cgroupfs: systemd
+    preferredAddressTypes:
+      - InternalIP
+      - ExternalIP
     configurationJSONPatches:
       - op: remove
         path: /crashLoopBackOff
