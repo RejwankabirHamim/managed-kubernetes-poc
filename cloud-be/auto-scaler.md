@@ -191,3 +191,8 @@ Release "cluster-autoscaler" does not exist. Installing it now.
 Error: failed parsing --set data: key "random" has no value
 
 ```
+
+
+
+# Auto Scaling Groups
+

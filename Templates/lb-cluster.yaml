@@ -1,7 +1,7 @@
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
-  name: capi-slowstart
+  name: lb-cluster
   namespace: new
 spec:
   clusterNetwork:
@@ -14,43 +14,39 @@ spec:
   controlPlaneRef:
     apiGroup: controlplane.cluster.x-k8s.io
     kind: KamajiControlPlane
-    name: capi-slowstart-kubevirt
+    name: lb-cluster-kubevirt
   infrastructureRef:
     apiGroup: infrastructure.cluster.x-k8s.io
     kind: KubevirtCluster
-    name: capi-slowstart
+    name: lb-cluster
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtCluster
 metadata:
   annotations:
     cluster.x-k8s.io/managed-by: kamaji
-  name: capi-slowstart
+  name: lb-cluster
   namespace: new
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
-  name: capi-slowstart-kubevirt
+  name: lb-cluster-kubevirt
   namespace: new
 spec:
-  controllerManager:
-    extraArgs:
-      - --cloud-provider=external
   addons:
     coreDNS:
       dnsServiceIPs:
         - 10.95.0.10
     konnectivity: {}
-    kubeProxy: {}
   dataStoreName: default
   deployment: null
   kubelet:
-    cgroupfs: systemd
     preferredAddressTypes:
       - InternalIP
       - ExternalIP
+    cgroupfs: systemd
     configurationJSONPatches:
       - op: remove
         path: /crashLoopBackOff
@@ -64,13 +60,13 @@ spec:
     serviceAnnotations:
       kube-vip.io/loadbalancerIPs: 0.0.0.0
     serviceType: LoadBalancer
-  replicas: 2
+  replicas: 3
   version: 1.34.1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
-  name: capi-slowstart-md-0
+  name: lb-cluster-md-0
   namespace: new
 spec:
   template:
@@ -80,9 +76,10 @@ spec:
       virtualMachineTemplate:
         metadata:
           annotations:
-            openstack-network-id: "e31344bd-5840-4e67-b9f4-42f2d022655c"
+            openstack-project-id: "779d9954e19740f99d2b5be81976bedc"
+            openstack-network-id: "3f09e930-bfab-4828-b12e-00f68a63764e"
+            openstack-subnet-id: "91c108e9-8be7-47b0-ab9b-e4803f9860a8"
             openstack-security-groups: '["disable"]'
-            openstack-subnet-ids: '["34ae98d5-c02d-48f7-a525-19dc6ea10032"]'
         spec:
           dataVolumeTemplates:
             - metadata:
@@ -103,14 +100,14 @@ spec:
             spec:
               domain:
                 cpu:
-                  cores: 4
+                  cores: 8
                   sockets: 1
                   threads: 1
                 devices:
                   disks:
                     - disk:
                         bus: virtio
-                      name: containervolume
+                      name: dv-volume
                   interfaces:
                     - bridge: {}
                       model: virtio
@@ -119,10 +116,10 @@ spec:
                   guest: 16Gi
                 resources:
                   limits:
-                    cpu: 4
+                    cpu: 8
                     memory: 16Gi
                   requests:
-                    cpu: 4
+                    cpu: 8
                     memory: 16Gi
               evictionStrategy: External
               networks:
@@ -131,12 +128,12 @@ spec:
               volumes:
                 - dataVolume:
                     name: capik-md-0-boot-volume
-                  name: containervolume
+                  name: dv-volume
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
-  name: capi-slowstart-md-0
+  name: lb-cluster-md-0
   namespace: new
 spec:
   template:
@@ -145,25 +142,27 @@ spec:
         - apt-get update
         - apt-get install -y qemu-guest-agent
         - systemctl enable --now qemu-guest-agent.service
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            - name: "cloud-provider"
-              value: "external"
-      users:
-        - name: myuser
-          sudo: ALL=(ALL) NOPASSWD:ALL
-          sshAuthorizedKeys:
-            - ssh-rsa ...
+      postKubeadmCommands:
+        - |
+          MGTIP=$(ip -4 -o addr show enp1s0 | awk '{print $4}' | cut -d/ -f1)
+          mkdir -p /etc/systemd/system/ssh.socket.d
+          printf '[Socket]\nListenStream=\nListenStream=%s:22\n' "$MGTIP" > /etc/systemd/system/ssh.socket.d/override.conf
+          systemctl daemon-reload
+          systemctl restart ssh.socket
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
-  name: capi-slowstart-md-0
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/cpu: "4"
+    capacity.cluster-autoscaler.kubernetes.io/memory: 8Gi
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "8"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "1"
+  name: lb-cluster-md-0
   namespace: new
 spec:
-  clusterName: capi-slowstart
-  replicas: 1
+  clusterName: lb-cluster
+  replicas: 2
   selector:
     matchLabels: null
   template:
@@ -172,10 +171,10 @@ spec:
         configRef:
           apiGroup: bootstrap.cluster.x-k8s.io
           kind: KubeadmConfigTemplate
-          name: capi-slowstart-md-0
-      clusterName: capi-slowstart
+          name: lb-cluster-md-0
+      clusterName: lb-cluster
       infrastructureRef:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: KubevirtMachineTemplate
-        name: capi-slowstart-md-0
+        name: lb-cluster-md-0
       version: 1.34.1

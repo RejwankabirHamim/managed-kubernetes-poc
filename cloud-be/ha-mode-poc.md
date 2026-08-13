@@ -1,3 +1,51 @@
+# MachineHealthCheck
+```azure
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineHealthCheck
+metadata:
+  name: capi-quickstart-node-unhealthy-5m
+spec:
+  # clusterName is required to associate this MachineHealthCheck with a particular cluster
+  clusterName: capi-quickstart
+  # selector is used to determine which Machines should be health checked
+  selector:
+    matchLabels:
+      nodepool: nodepool-0
+  # checks are the checks that are used to evaluate if a Machine is healthy.
+  checks:
+      # (Optional) nodeStartupTimeout determines how long a MachineHealthCheck should wait for
+      # a Node to join the cluster, before considering a Machine unhealthy.
+      # Defaults to 10 minutes if not specified.
+      # Set to 0 to disable the node startup timeout.
+      # Disabling this timeout will prevent a Machine from being considered unhealthy when
+      # the Node it created has not yet registered with the cluster. This can be useful when
+      # Nodes take a long time to start up or when you only want condition based checks for
+      # Machine health.
+      nodeStartupTimeoutSeconds: 600
+    
+      # Conditions to check on Nodes for matched Machines, if any condition is matched for the duration of its timeout, the Machine is considered unhealthy
+      unhealthyNodeConditions:
+      - type: Ready
+        status: Unknown
+        timeoutSeconds: 300
+      - type: Ready
+        status: "False"
+        timeoutSeconds: 300
+      unhealthyMachineConditions:
+      - type: "NodeReady"
+        status: Unknown
+        timeoutSeconds: 1800
+      - type: "InfrastructureReady"
+        status: "False"
+        timeoutSeconds: 1800
+  # remediation configures if and how remediation is triggered if a Machine is unhealthy.
+  remediation:
+    triggerIf:
+      # (Optional) unhealthyLessThanOrEqualTo prevents further remediation if the cluster is already partially unhealthy
+      unhealthyLessThanOrEqualTo: 40%
+
+```
+
 # High availability control plane
 
 ## Control plane components (Api server, controller manager, scheduler) 
@@ -49,4 +97,4 @@ A shared etcd cluster is used by multiple Kubernetes clusters. This can be cost-
 A dedicated etcd cluster is used exclusively by a single Kubernetes cluster. This provides better isolation and performance, as the etcd cluster is not shared with other Kubernetes clusters. However, it can be more expensive to maintain multiple dedicated etcd clusters, especially for smaller Kubernetes clusters. 
 
 #### Pooling etcd cluster:
-A pooling etcd cluster is a hybrid approach where multiple Kubernetes clusters share a pool of etcd nodes, but each Kubernetes cluster has its own logical etcd cluster within the pool. This can provide
+A pooling etcd cluster is a hybrid approach where multiple Kubernetes clusters share a pool of etcd nodes, but each Kubernetes cluster has its own logical etcd cluster within the pool. This can provide 
